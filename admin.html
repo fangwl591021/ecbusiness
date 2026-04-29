@@ -53,7 +53,7 @@
   <div id="form-section" class="hidden">
     <div class="header" id="form-title">新增店家</div>
     <input type="text" id="tenant-id" placeholder="商家代號 (英文/數字，例如: shop01)">
-    <input type="text" id="liff-id" placeholder="LIFF ID (LINE Developers 取得)">
+    <input type="text" id="liff-id" placeholder="LIFF ID (若留白將使用主系統)">
     <select id="tenant-status">
       <option value="active">已開通 (付費)</option>
       <option value="suspended">已停用 (欠費/測試結束)</option>
@@ -71,7 +71,8 @@
   </div>
 
   <script>
-    const CF_WORKER_URL = 'https://your-worker.your-subdomain.workers.dev'; // 請替換為您的 Worker 網址
+    const CF_WORKER_URL = 'https://ecbusiness.fangwl591021.workers.dev'; // 已替換為真實的 Worker 網址
+    const MAIN_SYSTEM_LIFF_ID = '2009930620-98JTuN5O'; // 主系統預設 LIFF ID
     let adminKey = '';
 
     function showMessage(text) {
@@ -137,7 +138,8 @@
       document.getElementById('form-title').innerText = "新增店家";
       document.getElementById('tenant-id').value = "";
       document.getElementById('tenant-id').readOnly = false;
-      document.getElementById('liff-id').value = "";
+      // 載入主系統預設 LIFF ID 以加速開通流程
+      document.getElementById('liff-id').value = MAIN_SYSTEM_LIFF_ID;
       document.getElementById('tenant-status').value = "active";
       
       document.getElementById('list-section').classList.add('hidden');
@@ -162,10 +164,13 @@
 
     async function saveTenant() {
       const tenantId = document.getElementById('tenant-id').value.trim();
-      const liffId = document.getElementById('liff-id').value.trim();
+      let liffId = document.getElementById('liff-id').value.trim();
       const status = document.getElementById('tenant-status').value;
 
       if (!tenantId) { showMessage("商家代號不能為空"); return; }
+      
+      // 如果總監手動清空欄位儲存，為了防呆我們還是自動補上主系統的 LIFF ID
+      if (!liffId) { liffId = MAIN_SYSTEM_LIFF_ID; }
 
       try {
         const payload = { tenantId, liffId, status };
