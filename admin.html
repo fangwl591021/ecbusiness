@@ -66,28 +66,85 @@
   <div id="overlay"><div class="modal"><div id="modal-msg" style="margin-bottom:20px; font-size:14px"></div><button onclick="closeModal()" style="width:100%">確定</button></div></div>
   <script>
     const API = 'https://ecbusiness.fangwl591021.workers.dev';
-    const INDEX = 'https://fangwl591021.github.io/action/index.html';
+    // 總監修正：更新至 ecbusiness 路徑
+    const BASE_PAGE = 'https://fangwl591021.github.io/ecbusiness/index.html';
     let adminKey = '';
+
     function showView(v) { document.getElementById('list-section').classList.toggle('hidden', v!=='list'); document.getElementById('form-section').classList.toggle('hidden', v!=='form'); }
     function closeModal() { document.getElementById('overlay').style.display = 'none'; }
-    async function login() { adminKey = document.getElementById('admin-key').value; await load(); }
+
+    async function login() {
+      adminKey = document.getElementById('admin-key').value;
+      await load();
+    }
+
     async function load() {
       const res = await fetch(`${API}/?action=admin_list&adminKey=${encodeURIComponent(adminKey)}`);
-      if(res.ok) { render(await res.json()); document.getElementById('login-section').classList.add('hidden'); showView('list'); }
+      if(res.ok) {
+        render(await res.json());
+        document.getElementById('login-section').classList.add('hidden');
+        showView('list');
+      }
     }
+
     function render(list) {
-      const body = document.getElementById('table-body'); body.innerHTML = '';
+      const body = document.getElementById('table-body');
+      body.innerHTML = '';
       list.forEach(t => {
-        const url = `${INDEX}?liffId=2009930620-98JTuN5O&tenantId=${t.tenantId}`;
+        // 使用修正後的 BASE_PAGE
+        const url = `${BASE_PAGE}?liffId=2009930620-98JTuN5O&tenantId=${t.tenantId}`;
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td><strong>${t.tenantName||t.tenantId}</strong><br><button class="btn-copy" onclick="copy('${url}')">複製連結</button></td><td class="status-${t.status}">${t.status}</td><td><small>${t.adminUserId||'尚未綁定'}</small></td><td>${t.status==='binding'?'<button onclick="approve(\''+t.tenantId+'\')">核准</button>':''}<button style="background:#ff4d4f; margin-left:5px" onclick="del(\''+t.tenantId+'\')">×</button></td>`;
+        tr.innerHTML = `
+          <td><strong>${t.tenantName||t.tenantId}</strong><br><button class="btn-copy" onclick="copy('${url}')">複製連結</button></td>
+          <td class="status-${t.status}">${t.status}</td>
+          <td><small>${t.adminUserId||'尚未綁定'}</small></td>
+          <td>
+            ${t.status==='binding'?'<button onclick="approve(\''+t.tenantId+'\')">核准</button>':''}
+            <button style="background:#ff4d4f; margin-left:5px" onclick="del(\''+t.tenantId+'\')">×</button>
+          </td>
+        `;
         body.appendChild(tr);
       });
     }
-    async function preCreate() { const id = prompt("代號:"); if(id) { await fetch(`${API}/?action=admin_save&adminKey=${encodeURIComponent(adminKey)}`, { method:'POST', body:JSON.stringify({tenantId:id, status:'pending'}) }); load(); } }
-    async function approve(id) { await fetch(`${API}/?action=admin_save&adminKey=${encodeURIComponent(adminKey)}`, { method:'POST', body:JSON.stringify({tenantId:id, status:'active'}) }); load(); }
-    async function del(id) { if(confirm('確定刪除?')) { await fetch(`${API}/?action=admin_delete&adminKey=${encodeURIComponent(adminKey)}`, { method:'POST', body:JSON.stringify({tenantId:id}) }); load(); } }
-    function copy(t) { const e = document.createElement('textarea'); e.value = t; document.body.appendChild(e); e.select(); document.execCommand('copy'); document.body.removeChild(e); alert('已複製'); }
+
+    async function preCreate() {
+      const id = prompt("請輸入商家英文代號:");
+      if(id) {
+        await fetch(`${API}/?action=admin_save&adminKey=${encodeURIComponent(adminKey)}`, {
+          method:'POST',
+          body:JSON.stringify({tenantId:id, status:'pending'})
+        });
+        load();
+      }
+    }
+
+    async function approve(id) {
+      await fetch(`${API}/?action=admin_save&adminKey=${encodeURIComponent(adminKey)}`, {
+        method:'POST',
+        body:JSON.stringify({tenantId:id, status:'active'})
+      });
+      load();
+    }
+
+    async function del(id) {
+      if(confirm('確定刪除該商家授權？')) {
+        await fetch(`${API}/?action=admin_delete&adminKey=${encodeURIComponent(adminKey)}`, {
+          method:'POST',
+          body:JSON.stringify({tenantId:id})
+        });
+        load();
+      }
+    }
+
+    function copy(t) {
+      const e = document.createElement('textarea');
+      e.value = t;
+      document.body.appendChild(e);
+      e.select();
+      document.execCommand('copy');
+      document.body.removeChild(e);
+      alert('已複製正確的網址到剪貼簿');
+    }
   </script>
 </body>
 </html>
