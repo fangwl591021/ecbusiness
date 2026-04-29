@@ -7,213 +7,87 @@
   <style>
     body { font-family: sans-serif; margin: 0; padding: 0; background-color: #f8f9fa; color: #111; display: flex; height: 100vh; }
     .hidden { display: none !important; }
-    
-    /* 側邊欄設計 */
-    .sidebar { width: 240px; background: #ffffff; border-right: 1px solid #eeeeee; display: flex; flex-direction: column; }
-    .sidebar-header { padding: 24px; font-size: 18px; color: #00B900; }
-    .sidebar-menu { flex: 1; padding: 10px 0; }
+    .sidebar { width: 220px; background: #ffffff; border-right: 1px solid #eeeeee; display: flex; flex-direction: column; }
+    .sidebar-header { padding: 24px; font-size: 16px; color: #00B900; }
     .menu-item { padding: 12px 24px; font-size: 14px; cursor: pointer; color: #666; transition: 0.2s; }
     .menu-item:hover { background: #f9f9f9; color: #111; }
-    .menu-item.active { color: #00B900; font-weight: bold; }
-    
-    /* 主內容區 */
-    .main-content { flex: 1; overflow-y: auto; padding: 30px; display: flex; flex-direction: column; }
-    .content-card { background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-    
+    .menu-item.active { color: #00B900; background: #f0fff0; border-right: 3px solid #00B900; }
+    .main { flex: 1; overflow-y: auto; padding: 30px; }
+    .card { background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
     table { width: 100%; border-collapse: collapse; font-size: 14px; }
-    th { text-align: left; padding: 12px; border-bottom: 2px solid #f0f0f0; color: #999; font-weight: normal; }
-    td { padding: 16px 12px; border-bottom: 1px solid #f9f9f9; }
-    
-    input, select { display: block; width: 100%; margin-bottom: 16px; padding: 12px 0; border: none; border-bottom: 1px solid #eee; font-size: 14px; box-sizing: border-box; }
+    th { text-align: left; padding: 12px; border-bottom: 1px solid #eeeeee; color: #999; font-weight: normal; }
+    td { padding: 14px 12px; border-bottom: 1px solid #f9f9f9; }
+    input, select { display: block; width: 100%; margin-bottom: 20px; padding: 10px 0; border: none; border-bottom: 1px solid #eee; font-size: 14px; background: transparent; }
     input:focus { outline: none; border-bottom: 1px solid #00B900; }
-    
-    button { background-color: #00B900; color: #fff; border: none; padding: 10px 20px; border-radius: 4px; font-size: 14px; cursor: pointer; }
-    .btn-outline { background: none; color: #666; border: 1px solid #ddd; }
-    .btn-danger { background: #ff4d4f; padding: 8px; }
-    
+    button { background-color: #00B900; color: #fff; border: none; padding: 10px 18px; border-radius: 4px; cursor: pointer; font-size: 13px; }
+    .btn-copy { background: #1890ff; padding: 4px 8px; font-size: 11px; }
     .status-active { color: #00B900; }
-    .status-binding { color: #faad14; }
-    .status-pending { color: #999; }
-
-    #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
-    .modal { background: #fff; padding: 24px; border-radius: 8px; width: 320px; text-align: center; }
+    .status-binding { color: #faad14; font-weight: bold; }
+    #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
+    .modal { background: #fff; padding: 24px; border-radius: 8px; width: 300px; text-align: center; }
   </style>
 </head>
 <body>
-
-  <!-- 左側儀表板 -->
-  <div class="sidebar" id="sidebar">
-    <div class="sidebar-header">SaaS 管理系統</div>
-    <div class="sidebar-menu">
-      <div class="menu-item active" onclick="showView('list')">商家授權管理</div>
-      <div class="menu-item" onclick="openSS()">查看 Google 報表</div>
-      <div class="menu-item" onclick="location.reload()">重新整理</div>
-    </div>
+  <div class="sidebar">
+    <div class="sidebar-header">QQ SaaS Admin</div>
+    <div class="menu-item active">商家授權管理</div>
+    <div class="menu-item" onclick="window.open('https://docs.google.com/spreadsheets/d/1nsURHsvW-lGLlYQ4VZAEGo_lzi_5IBvekQ1542T3hw8')">查看 Google 報表</div>
   </div>
-
-  <!-- 右側資料區 -->
-  <div class="main-content">
-    
-    <!-- 登入區域 -->
-    <div id="login-section" class="content-card">
-      <h3 style="margin-top:0">管理員登入</h3>
-      <input type="password" id="admin-key" placeholder="請輸入管理密碼">
-      <button onclick="login()" style="width: 100%">進入系統</button>
+  <div class="main">
+    <div id="login-section" class="card">
+      <input type="password" id="admin-key" placeholder="管理密碼">
+      <button onclick="login()" style="width:100%">登入系統</button>
     </div>
-
-    <!-- 清單區域 -->
     <div id="list-section" class="hidden">
-      <div class="header-row">
-        <h3 style="margin:0">商家名單</h3>
-        <button onclick="showView('form')">＋ 預開帳號</button>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+        <h3 style="margin:0; font-weight:normal">商家名單</h3>
+        <button onclick="preCreate()">＋ 預開帳號</button>
       </div>
-      <div class="content-card">
+      <div class="card">
         <table>
-          <thead>
-            <tr>
-              <th>商家</th>
-              <th>狀態</th>
-              <th>綁定 UID</th>
-              <th>操作</th>
-            </tr>
-          </thead>
+          <thead><tr><th>商家/連結</th><th>狀態</th><th>綁定 UID</th><th>操作</th></tr></thead>
           <tbody id="table-body"></tbody>
         </table>
       </div>
     </div>
-
-    <!-- 表單區域 -->
-    <div id="form-section" class="hidden">
-      <div class="header-row">
-        <h3 id="form-title">商家設定</h3>
-        <button class="btn-outline" onclick="showView('list')">返回</button>
-      </div>
-      <div class="content-card">
-        <div style="font-size:12px; color:#999; margin-bottom:4px">商家代號 (不可改)</div>
-        <input type="text" id="t-id" placeholder="如: sogo01">
-        <div style="font-size:12px; color:#999; margin-bottom:4px">商家名稱</div>
-        <input type="text" id="t-name" placeholder="如: 崇光百貨">
-        <div style="font-size:12px; color:#999; margin-bottom:4px">服務狀態</div>
-        <select id="t-status">
-          <option value="pending">pending (待填寫)</option>
-          <option value="binding">binding (待開通)</option>
-          <option value="active">active (已開通)</option>
-          <option value="suspended">suspended (停用)</option>
-        </select>
-        <button onclick="saveTenant()" style="width:100%">儲存設定</button>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- 訊息彈窗 -->
-  <div id="overlay">
-    <div class="modal">
-      <div id="modal-msg" style="margin-bottom:20px; font-size:14px; line-height:1.6"></div>
-      <div id="confirm-box" class="hidden" style="display:flex; gap:10px">
-        <button id="btn-yes" style="flex:1">確定</button>
-        <button onclick="closeModal()" style="flex:1; background:#eee; color:#111">取消</button>
-      </div>
-      <button id="btn-ok" onclick="closeModal()" style="width:100%">我知道了</button>
+    <div id="form-section" class="hidden card">
+      <h3 style="margin-top:0; font-weight:normal">設定商家</h3>
+      <input type="text" id="t-id" placeholder="商家代號 (英文)">
+      <input type="text" id="t-name" placeholder="商家名稱">
+      <select id="t-status">
+        <option value="pending">pending (初始)</option>
+        <option value="binding">binding (待核准)</option>
+        <option value="active">active (已開通)</option>
+      </select>
+      <button onclick="saveTenant()" style="width:100%">儲存設定</button>
+      <button onclick="showView('list')" style="background:none; color:#999; width:100%; margin-top:10px">返回清單</button>
     </div>
   </div>
-
+  <div id="overlay"><div class="modal"><div id="modal-msg" style="margin-bottom:20px; font-size:14px"></div><button onclick="closeModal()" style="width:100%">確定</button></div></div>
   <script>
-    const WORKER = 'https://ecbusiness.fangwl591021.workers.dev';
-    const INDEX_PAGE = 'https://fangwl591021.github.io/action/index.html';
-    const SS_URL = 'https://docs.google.com/spreadsheets/d/1nsURHsvW-lGLlYQ4VZAEGo_lzi_5IBvekQ1542T3hw8';
+    const API = 'https://ecbusiness.fangwl591021.workers.dev';
+    const INDEX = 'https://fangwl591021.github.io/action/index.html';
     let adminKey = '';
-
-    function showModal(msg, isConfirm = false, onConfirm = null) {
-      document.getElementById('modal-msg').innerText = msg;
-      document.getElementById('overlay').style.display = 'flex';
-      document.getElementById('confirm-box').classList.toggle('hidden', !isConfirm);
-      document.getElementById('btn-ok').classList.toggle('hidden', isConfirm);
-      if(isConfirm) document.getElementById('btn-yes').onclick = () => { onConfirm(); closeModal(); };
-    }
+    function showView(v) { document.getElementById('list-section').classList.toggle('hidden', v!=='list'); document.getElementById('form-section').classList.toggle('hidden', v!=='form'); }
     function closeModal() { document.getElementById('overlay').style.display = 'none'; }
-    function openSS() { window.open(SS_URL, '_blank'); }
-
-    function showView(view) {
-      document.getElementById('list-section').classList.toggle('hidden', view !== 'list');
-      document.getElementById('form-section').classList.toggle('hidden', view !== 'form');
+    async function login() { adminKey = document.getElementById('admin-key').value; await load(); }
+    async function load() {
+      const res = await fetch(`${API}/?action=admin_list&adminKey=${encodeURIComponent(adminKey)}`);
+      if(res.ok) { render(await res.json()); document.getElementById('login-section').classList.add('hidden'); showView('list'); }
     }
-
-    async function login() {
-      adminKey = document.getElementById('admin-key').value;
-      await loadList();
-    }
-
-    async function loadList() {
-      const res = await fetch(`${WORKER}/?action=admin_list&adminKey=${encodeURIComponent(adminKey)}`);
-      if (res.ok) {
-        const data = await res.json();
-        render(data);
-        document.getElementById('login-section').classList.add('hidden');
-        showView('list');
-      } else { showModal("登入失敗，請確認密碼。"); }
-    }
-
     function render(list) {
-      const body = document.getElementById('table-body');
-      body.innerHTML = '';
+      const body = document.getElementById('table-body'); body.innerHTML = '';
       list.forEach(t => {
-        const regUrl = `${INDEX_PAGE}?liffId=2009930620-98JTuN5O&tenantId=${t.tenantId}`;
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td><strong>${t.tenantName || t.tenantId}</strong><br><small style="color:#aaa; cursor:pointer" onclick="copyText('${regUrl}')">點此複製連結</small></td>
-          <td class="status-${t.status}">${t.status}</td>
-          <td><small>${t.adminUserId || '未綁定'}</small></td>
-          <td style="display:flex; gap:5px">
-            <button class="btn-outline" style="padding:5px 10px" onclick="editTenant('${t.tenantId}','${t.tenantName}','${t.status}')">改</button>
-            <button class="btn-danger" onclick="delTenant('${t.tenantId}')">×</button>
-          </td>
-        `;
-        body.appendChild(row);
+        const url = `${INDEX}?liffId=2009930620-98JTuN5O&tenantId=${t.tenantId}`;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td><strong>${t.tenantName||t.tenantId}</strong><br><button class="btn-copy" onclick="copy('${url}')">複製連結</button></td><td class="status-${t.status}">${t.status}</td><td><small>${t.adminUserId||'尚未綁定'}</small></td><td>${t.status==='binding'?'<button onclick="approve(\''+t.tenantId+'\')">核准</button>':''}<button style="background:#ff4d4f; margin-left:5px" onclick="del(\''+t.tenantId+'\')">×</button></td>`;
+        body.appendChild(tr);
       });
     }
-
-    function editTenant(id, name, status) {
-      document.getElementById('t-id').value = id;
-      document.getElementById('t-id').readOnly = true;
-      document.getElementById('t-name').value = name === 'undefined' ? '' : name;
-      document.getElementById('t-status').value = status;
-      showView('form');
-    }
-
-    async function saveTenant() {
-      const tenantId = document.getElementById('t-id').value.trim();
-      const tenantName = document.getElementById('t-name').value.trim();
-      const status = document.getElementById('t-status').value;
-      if (!tenantId) return showModal("請填寫代號");
-      
-      await fetch(`${WORKER}/?action=admin_save&adminKey=${encodeURIComponent(adminKey)}`, {
-        method: 'POST',
-        body: JSON.stringify({ tenantId, tenantName, status })
-      });
-      await loadList();
-    }
-
-    async function delTenant(id) {
-      showModal(`確定刪除 [${id}]？R2 資料將消失。`, true, async () => {
-        await fetch(`${WORKER}/?action=admin_delete&adminKey=${encodeURIComponent(adminKey)}`, {
-          method: 'POST',
-          body: JSON.stringify({ tenantId: id })
-        });
-        await loadList();
-      });
-    }
-
-    function copyText(text) {
-      const el = document.createElement('textarea');
-      el.value = text;
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand('copy');
-      document.body.removeChild(el);
-      showModal('註冊連結已複製，請發送給客戶。');
-    }
+    async function preCreate() { const id = prompt("代號:"); if(id) { await fetch(`${API}/?action=admin_save&adminKey=${encodeURIComponent(adminKey)}`, { method:'POST', body:JSON.stringify({tenantId:id, status:'pending'}) }); load(); } }
+    async function approve(id) { await fetch(`${API}/?action=admin_save&adminKey=${encodeURIComponent(adminKey)}`, { method:'POST', body:JSON.stringify({tenantId:id, status:'active'}) }); load(); }
+    async function del(id) { if(confirm('確定刪除?')) { await fetch(`${API}/?action=admin_delete&adminKey=${encodeURIComponent(adminKey)}`, { method:'POST', body:JSON.stringify({tenantId:id}) }); load(); } }
+    function copy(t) { const e = document.createElement('textarea'); e.value = t; document.body.appendChild(e); e.select(); document.execCommand('copy'); document.body.removeChild(e); alert('已複製'); }
   </script>
 </body>
 </html>
