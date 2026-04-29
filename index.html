@@ -29,6 +29,9 @@
     
     #loading { text-align: center; padding-top: 50px; color: #999; font-size: 14px; }
     
+    /* 除錯輸入框樣式 */
+    #debug-input { padding: 20px; border: 1px dashed #ccc; margin-top: 20px; border-radius: 8px; background: #fafafa; }
+    
     /* 訊息彈窗樣式 */
     #message-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
     .message-box { background: #fff; padding: 24px; border-radius: 12px; width: 80%; max-width: 300px; text-align: center; }
@@ -38,6 +41,18 @@
 </head>
 <body>
   <div id="loading">身分辨認中...</div>
+
+  <!-- 參數遺失補救區 (僅在 blob 或無參數網址出現) -->
+  <div id="section-debug" class="section">
+    <div id="debug-input">
+      <p style="font-size:14px; color:#666;">偵測到預覽環境參數遺失，請手動輸入：</p>
+      <span class="label">商家代號 (tenantId)</span>
+      <input type="text" id="manual-tenant" placeholder="例如: L-LINK">
+      <span class="label">LIFF ID</span>
+      <input type="text" id="manual-liff" value="2009930620-98JTuN5O">
+      <button onclick="manualStart()">確認並開始測試</button>
+    </div>
+  </div>
 
   <!-- 1. 商家註冊區 -->
   <div id="section-onboarding" class="section">
@@ -118,24 +133,50 @@
       let tId = urlObj.searchParams.get('tenantId');
       let lId = urlObj.searchParams.get('liffId');
       
-      // 解析 liff.state 內的參數
       if (!tId || !lId) {
-        const state = urlObj.searchParams.get('liff.state');
-        if (state) {
-          const sParams = new URLSearchParams(state.includes('?') ? state.split('?')[1] : '?' + state);
-          tId = tId || sParams.get('tenantId');
-          lId = lId || sParams.get('liffId');
+        const hash = window.location.hash;
+        if (hash.includes('?')) {
+          const hashParams = new URLSearchParams(hash.split('?')[1]);
+          tId = tId || hashParams.get('tenantId');
+          lId = lId || hashParams.get('liffId');
         }
       }
-      tenantId = tId; liffId = lId;
+
+      if (!tId || !lId) {
+        let state = urlObj.searchParams.get('liff.state');
+        if (!state && window.location.hash.includes('liff.state')) {
+            const hashQ = window.location.hash.split('?')[1] || window.location.hash.replace('#','?');
+            state = new URLSearchParams(hashQ).get('liff.state');
+        }
+        if (state) {
+          try {
+            const decodedState = decodeURIComponent(state);
+            const stateParams = new URLSearchParams(decodedState.includes('?') ? decodedState.split('?')[1] : decodedState);
+            tId = tId || stateParams.get('tenantId');
+            lId = lId || stateParams.get('liffId');
+          } catch(e) {}
+        }
+      }
+      
+      if (tId) tenantId = tId;
+      if (lId) liffId = lId;
     }
 
-    async function init() {
-      resolveParams();
+    /**
+     * @param {boolean} skipResolve - 若為 true，則跳過解析網址 (用於手動模式)
+     */
+    async function init(skipResolve = false) {
+      if (!skipResolve) resolveParams();
+
       if (!tenantId || !liffId) {
-        document.getElementById('loading').innerText = '網址參數遺失。';
+        showSection('debug');
+        console.warn("偵測到參數遺失，已開啟手動補救模式。");
         return;
       }
+
+      document.getElementById('section-debug').classList.remove('active');
+      document.getElementById('loading').style.display = 'block';
+
       try {
         await liff.init({ liffId: liffId });
         if (!liff.isLoggedIn()) {
@@ -148,6 +189,22 @@
       } catch (err) {
         document.getElementById('loading').innerText = 'LINE 認證初始化失敗。';
       }
+    }
+
+    function manualStart() {
+      const inputTenant = document.getElementById('manual-tenant').value.trim();
+      const inputLiff = document.getElementById('manual-liff').value.trim();
+      
+      if(!inputTenant || !inputLiff) {
+        return alert("請完整填寫參數");
+      }
+      
+      // 設定全域變數
+      tenantId = inputTenant;
+      liffId = inputLiff;
+      
+      // 呼叫 init，並傳入 true 要求它不要去讀取有缺陷的網址
+      init(true);
     }
 
     async function checkStatus() {
@@ -220,7 +277,7 @@
     }
 
     function buildFlex() {
-      const currentUrl = window.location.origin + window.location.pathname + window.location.search;
+      const currentUrl = window.location.origin + window.location.pathname + "?liffId=" + liffId + "&tenantId=" + tenantId;
       return {
         type: "flex", altText: `${cardData.name} 的數位名片`,
         contents: {
@@ -234,8 +291,8 @@
                       { type: "image", url: cardData.avatar || "https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png", size: "sm", aspectMode: "cover", aspectRatio: "1:1", flex: 0, cornerRadius: "100px" },
                       {
                         type: "box", layout: "vertical", margin: "lg", contents: [
-                          { type: "text", text: cardData.name, size: "xl", color: "#ffffff" },
-                          { type: "text", text: cardData.title || "專業人士", size: "xs", color: "#ffffffcc", margin: "xs", wrap: true }
+                          { type: "text", text: cardData.name, size: "xl", color: "#ffffff", weight: "regular" },
+                          { type: "text", text: cardData.title || "專業商務人士", size: "xs", color: "#ffffffcc", margin: "xs", wrap: true }
                         ]
                       }
                     ]
@@ -281,7 +338,13 @@
       try {
         const res = await liff.shareTargetPicker([buildFlex()]);
         if (res) liff.closeWindow();
-      } catch (err) { showMessage("分享失敗或取消。"); }
+      } catch (err) {
+        if (err.code === 403 || err.message.includes('403')) {
+          showMessage("發送失敗 (403)：請確認您已授權「分享至群組」權限。\n(若已在後台開啟，請嘗試重新登入 LIFF)");
+        } else {
+          showMessage("分享已取消。");
+        }
+      }
     }
 
     init();
