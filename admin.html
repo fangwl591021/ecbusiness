@@ -5,196 +5,112 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SaaS 總管後台</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; color: #111; margin: 0; background-color: #f4f6f8; }
-    .container { max-width: 1000px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    body { font-family: sans-serif; padding: 20px; color: #111; margin: 0; background-color: #f8f9fa; }
+    .container { max-width: 1100px; margin: 0 auto; background: #fff; padding: 24px; border-radius: 8px; }
     .hidden { display: none !important; }
-    .header { font-size: 22px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f2f5; padding-bottom: 16px; }
-    
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th { text-align: left; background: #fcfcfc; padding: 15px; border-bottom: 2px solid #eee; color: #666; font-size: 14px; }
-    td { padding: 15px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; font-size: 14px; }
-    
-    input, select { display: block; width: 100%; margin-bottom: 16px; padding: 12px; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
-    input:focus { outline: none; border-color: #00B900; }
-    
-    button { background-color: #00B900; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; transition: 0.2s; font-size: 14px; }
-    button:hover { opacity: 0.85; }
-    .btn-danger { background-color: #ff4d4f; }
-    .btn-edit { background-color: #1890ff; }
-    .btn-ghost { background: none; color: #999; margin-top: 10px; width: 100%; }
-
-    .status-tag { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
-    .active { background: #e6f7ff; color: #1890ff; border: 1px solid #91d5ff; }
-    .suspended { background: #fff1f0; color: #ff4d4f; border: 1px solid #ffa39e; }
-
-    #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
-    .modal { background: #fff; padding: 30px; border-radius: 12px; width: 340px; text-align: center; }
+    .header { font-size: 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th { text-align: left; padding: 12px; border-bottom: 2px solid #eee; color: #666; font-weight: normal; }
+    td { padding: 12px; border-bottom: 1px solid #eee; }
+    input { display: block; width: 100%; margin-bottom: 16px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+    button { background-color: #00B900; color: #fff; border: none; padding: 10px 16px; border-radius: 4px; cursor: pointer; }
+    .btn-copy { background-color: #1890ff; font-size: 12px; padding: 4px 8px; }
+    .status-pending { color: #999; }
+    .status-binding { color: #faad14; font-weight: bold; }
+    .status-active { color: #00B900; }
   </style>
 </head>
 <body>
-
 <div class="container">
-  <!-- 登入介面 -->
   <div id="login-section">
-    <div class="header">SaaS 數位商務管理</div>
-    <input type="password" id="admin-key" placeholder="請輸入管理密碼">
-    <button onclick="login()" style="width: 100%;">進入系統</button>
+    <div class="header">總管登入</div>
+    <input type="password" id="admin-key" placeholder="管理密碼">
+    <button onclick="login()" style="width: 100%;">進入管理後台</button>
   </div>
 
-  <!-- 店家列表表格 -->
   <div id="list-section" class="hidden">
-    <div class="header">
-      商家授權清單 
-      <button onclick="showForm()">＋ 註冊新商家</button>
-    </div>
+    <div class="header">商家授權管理 <button onclick="preCreate()">＋ 預開帳號</button></div>
     <table>
       <thead>
         <tr>
-          <th>商家名稱 / 代號</th>
-          <th>LIFF 通道</th>
-          <th>服務狀態</th>
-          <th style="width: 150px;">操作</th>
+          <th>商家名稱/代號</th>
+          <th>註冊連結</th>
+          <th>綁定身分 (UID)</th>
+          <th>狀態</th>
+          <th>操作</th>
         </tr>
       </thead>
       <tbody id="table-body"></tbody>
     </table>
   </div>
-
-  <!-- 店家註冊表單 -->
-  <div id="form-section" class="hidden">
-    <div class="header" id="form-title">註冊店家</div>
-    <div style="font-size: 13px; color: #888; margin-bottom: 5px;">商家唯一代號 (建議用英文，存檔後不可改)</div>
-    <input type="text" id="tenant-id" placeholder="例如: shop_abc">
-    <div style="font-size: 13px; color: #888; margin-bottom: 5px;">商家顯示名稱 (方便總監管理)</div>
-    <input type="text" id="tenant-name" placeholder="例如: 勝利數位名片工作室">
-    <div style="font-size: 13px; color: #888; margin-bottom: 5px;">LIFF ID</div>
-    <input type="text" id="liff-id">
-    <div style="font-size: 13px; color: #888; margin-bottom: 5px;">付費開通狀態</div>
-    <select id="tenant-status">
-      <option value="active">已開通 (Active)</option>
-      <option value="suspended">已停用 (Suspended)</option>
-    </select>
-    <button onclick="saveTenant()" style="width: 100%;">儲存授權設定</button>
-    <button class="btn-ghost" onclick="showList()">返回清單</button>
-  </div>
-</div>
-
-<div id="overlay">
-  <div class="modal">
-    <div id="modal-text" style="margin-bottom: 20px; font-size: 15px;"></div>
-    <div id="modal-confirm" class="hidden">
-        <button id="confirm-yes" style="margin-right: 10px;">確定</button>
-        <button id="confirm-no" style="background:#ccc;">取消</button>
-    </div>
-    <button id="modal-ok" onclick="closeModal()">確認</button>
-  </div>
 </div>
 
 <script>
   const WORKER_URL = 'https://ecbusiness.fangwl591021.workers.dev';
-  const DEFAULT_LIFF = '2009930620-98JTuN5O';
-  let authKey = '';
-
-  function openModal(text, confirmMode = false, onConfirm = null) {
-    document.getElementById('modal-text').innerText = text;
-    document.getElementById('overlay').style.display = 'flex';
-    if (confirmMode) {
-      document.getElementById('modal-confirm').classList.remove('hidden');
-      document.getElementById('modal-ok').classList.add('hidden');
-      document.getElementById('confirm-yes').onclick = () => { onConfirm(); closeModal(); };
-      document.getElementById('confirm-no').onclick = closeModal;
-    } else {
-      document.getElementById('modal-confirm').classList.add('hidden');
-      document.getElementById('modal-ok').classList.remove('hidden');
-    }
-  }
-  function closeModal() { document.getElementById('overlay').style.display = 'none'; }
+  const ONBOARDING_URL = 'https://fangwl591021.github.io/action/onboarding.html';
+  let adminKey = '';
 
   async function login() {
-    authKey = document.getElementById('admin-key').value;
-    if (!authKey) return openModal("請填寫密碼");
-    await loadTenants();
+    adminKey = document.getElementById('admin-key').value;
+    await load();
   }
 
-  async function loadTenants() {
-    try {
-      const res = await fetch(`${WORKER_URL}?action=admin_list&adminKey=${encodeURIComponent(authKey)}`);
-      if (res.status === 401) return openModal("管理密碼錯誤");
+  async function load() {
+    const res = await fetch(`${WORKER_URL}?action=admin_list&adminKey=${encodeURIComponent(adminKey)}`);
+    if (res.ok) {
       const data = await res.json();
       render(data);
       document.getElementById('login-section').classList.add('hidden');
-      document.getElementById('form-section').classList.add('hidden');
       document.getElementById('list-section').classList.remove('hidden');
-    } catch (e) { openModal("網路連線失敗，請檢查 Worker 設定"); }
+    }
   }
 
   function render(list) {
     const body = document.getElementById('table-body');
-    body.innerHTML = list.length === 0 ? '<tr><td colspan="4" style="text-align:center; color:#999; padding:40px;">目前尚無註冊商家</td></tr>' : '';
+    body.innerHTML = '';
     list.forEach(t => {
+      const regUrl = `${ONBOARDING_URL}?tenantId=${t.tenantId}`;
       const row = document.createElement('tr');
       row.innerHTML = `
-        <td><strong>${t.tenantName || '未命名商家'}</strong><br><small style="color:#aaa">${t.tenantId}</small></td>
-        <td><code style="font-size:12px; color:#888;">${t.liffId}</code></td>
-        <td><span class="status-tag ${t.status}">${t.status === 'active' ? '服務中' : '已暫停'}</span></td>
+        <td>${t.tenantName || '(未填寫)'}<br><small style="color:#aaa">${t.tenantId}</small></td>
+        <td><button class="btn-copy" onclick="copyText('${regUrl}')">複製註冊網址</button></td>
+        <td><small>${t.adminUserId || '尚未綁定'}</small></td>
+        <td class="status-${t.status}">${t.status}</td>
         <td>
-          <button class="btn-edit" onclick="editTenant('${t.tenantId}', '${t.tenantName || ''}', '${t.liffId}', '${t.status}')">編輯</button>
-          <button class="btn-danger" style="padding: 10px;" onclick="delTenant('${t.tenantId}')">×</button>
+          ${t.status === 'binding' ? `<button onclick="approve('${t.tenantId}')">核准開通</button>` : ''}
+          ${t.status === 'active' ? `<button style="background:#ff4d4f" onclick="suspend('${t.tenantId}')">停用</button>` : ''}
         </td>
       `;
       body.appendChild(row);
     });
   }
 
-  function showForm() {
-    document.getElementById('form-title').innerText = "註冊新商家";
-    document.getElementById('tenant-id').value = "";
-    document.getElementById('tenant-id').readOnly = false;
-    document.getElementById('tenant-name').value = "";
-    document.getElementById('liff-id').value = DEFAULT_LIFF;
-    document.getElementById('tenant-status').value = "active";
-    document.getElementById('list-section').classList.add('hidden');
-    document.getElementById('form-section').classList.remove('hidden');
-  }
-
-  function editTenant(id, name, liff, status) {
-    document.getElementById('form-title').innerText = "編輯商家授權";
-    document.getElementById('tenant-id').value = id;
-    document.getElementById('tenant-id').readOnly = true;
-    document.getElementById('tenant-name').value = name;
-    document.getElementById('liff-id').value = liff;
-    document.getElementById('tenant-status').value = status;
-    document.getElementById('list-section').classList.add('hidden');
-    document.getElementById('form-section').classList.remove('hidden');
-  }
-
-  function showList() { document.getElementById('form-section').classList.add('hidden'); document.getElementById('list-section').classList.remove('hidden'); }
-
-  async function saveTenant() {
-    const tenantId = document.getElementById('tenant-id').value.trim();
-    const tenantName = document.getElementById('tenant-name').value.trim();
-    const liffId = document.getElementById('liff-id').value.trim() || DEFAULT_LIFF;
-    const status = document.getElementById('tenant-status').value;
-    if (!tenantId) return openModal("代號為必填項");
-    try {
-      await fetch(`${WORKER_URL}?action=admin_save&adminKey=${encodeURIComponent(authKey)}`, {
-        method: 'POST',
-        body: JSON.stringify({ tenantId, tenantName, liffId, status })
-      });
-      await loadTenants();
-    } catch (e) { openModal("存檔失敗"); }
-  }
-
-  async function delTenant(id) {
-    openModal(`確定要刪除商家 [${id}] 嗎？此動作將移除該商家在 R2 的所有配置檔案！`, true, async () => {
-      try {
-        await fetch(`${WORKER_URL}?action=admin_delete&adminKey=${encodeURIComponent(authKey)}`, {
-          method: 'POST',
-          body: JSON.stringify({ tenantId: id })
-        });
-        await loadTenants();
-      } catch (e) { openModal("刪除失敗"); }
+  async function preCreate() {
+    const id = prompt("請輸入新商家的唯一代號 (英文):");
+    if (!id) return;
+    await fetch(`${WORKER_URL}?action=admin_save&adminKey=${encodeURIComponent(adminKey)}`, {
+      method: 'POST',
+      body: JSON.stringify({ tenantId: id, status: 'pending' })
     });
+    load();
+  }
+
+  async function approve(id) {
+    await fetch(`${WORKER_URL}?action=admin_save&adminKey=${encodeURIComponent(adminKey)}`, {
+      method: 'POST',
+      body: JSON.stringify({ tenantId: id, status: 'active' })
+    });
+    load();
+  }
+
+  function copyText(text) {
+    const el = document.createElement('textarea');
+    el.value = text;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    alert('已複製網址');
   }
 </script>
 </body>
