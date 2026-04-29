@@ -71,8 +71,8 @@
   </div>
 
   <script>
-    const CF_WORKER_URL = 'https://ecbusiness.fangwl591021.workers.dev'; // 已替換為真實的 Worker 網址
-    const MAIN_SYSTEM_LIFF_ID = '2009930620-98JTuN5O'; // 主系統預設 LIFF ID
+    const CF_WORKER_URL = 'https://ecbusiness.fangwl591021.workers.dev';
+    const MAIN_SYSTEM_LIFF_ID = '2009930620-98JTuN5O';
     let adminKey = '';
 
     function showMessage(text) {
@@ -90,9 +90,8 @@
 
     async function fetchTenants() {
       try {
-        const res = await fetch(`${CF_WORKER_URL}?action=admin_list`, {
-          headers: { 'x-admin-key': adminKey }
-        });
+        // 變更點：直接將密碼作為 URL 參數送出，避開 Header CORS 檢查
+        const res = await fetch(`${CF_WORKER_URL}?action=admin_list&adminKey=${encodeURIComponent(adminKey)}`);
         
         if (res.status === 401) {
           showMessage("密碼錯誤，請重新輸入。");
@@ -138,7 +137,6 @@
       document.getElementById('form-title').innerText = "新增店家";
       document.getElementById('tenant-id').value = "";
       document.getElementById('tenant-id').readOnly = false;
-      // 載入主系統預設 LIFF ID 以加速開通流程
       document.getElementById('liff-id').value = MAIN_SYSTEM_LIFF_ID;
       document.getElementById('tenant-status').value = "active";
       
@@ -149,7 +147,7 @@
     function editTenant(id, liff, status) {
       document.getElementById('form-title').innerText = "編輯店家";
       document.getElementById('tenant-id').value = id;
-      document.getElementById('tenant-id').readOnly = true; // 編輯時不允許改 ID
+      document.getElementById('tenant-id').readOnly = true;
       document.getElementById('liff-id').value = liff === 'undefined' ? '' : liff;
       document.getElementById('tenant-status').value = status;
       
@@ -168,17 +166,16 @@
       const status = document.getElementById('tenant-status').value;
 
       if (!tenantId) { showMessage("商家代號不能為空"); return; }
-      
-      // 如果總監手動清空欄位儲存，為了防呆我們還是自動補上主系統的 LIFF ID
       if (!liffId) { liffId = MAIN_SYSTEM_LIFF_ID; }
 
       try {
         const payload = { tenantId, liffId, status };
-        const res = await fetch(`${CF_WORKER_URL}?action=admin_save`, {
+        
+        // 變更點：直接將密碼作為 URL 參數送出，避開 Header CORS 檢查
+        const res = await fetch(`${CF_WORKER_URL}?action=admin_save&adminKey=${encodeURIComponent(adminKey)}`, {
           method: 'POST',
           headers: { 
-            'Content-Type': 'application/json',
-            'x-admin-key': adminKey
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify(payload)
         });
@@ -192,7 +189,7 @@
 
         const result = await res.json();
         if (result.status === 'success') {
-          await fetchTenants(); // 儲存成功後重新讀取列表並返回
+          await fetchTenants();
         } else {
           showMessage("儲存失敗");
         }
