@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>商家註冊與身分綁定</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 30px; line-height: 1.6; color: #333; background: #fff; }
+    .step { margin-bottom: 40px; display: none; }
+    .active { display: block; }
+    h2 { font-size: 18px; font-weight: normal; color: #00B900; }
+    input { width: 100%; padding: 12px 0; border: none; border-bottom: 1px solid #eee; margin: 20px 0; font-size: 16px; }
+    button { width: 100%; padding: 15px; background: #00B900; color: #fff; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
+    #loading { text-align: center; color: #999; margin-top: 50px; }
+  </style>
+</head>
+<body>
+  <div id="loading">載入中...</div>
+
+  <!-- 步驟 1: 填寫資料 -->
+  <div id="step-1" class="step">
+    <h2>第一步：填寫商家基本資訊</h2>
+    <p>請輸入您要在系統中顯示的商家名稱。</p>
+    <input type="text" id="tenant-name" placeholder="例如：勝利數位行銷中心">
+    <button onclick="submitInfo()">下一步：綁定 LINE 身分</button>
+  </div>
+
+  <!-- 步驟 2: 綁定身分 -->
+  <div id="step-2" class="step">
+    <h2>第二步：抓取 LINE 身分</h2>
+    <p>請點擊下方按鈕，系統將抓取您的 LINE 帳號作為此商家的「主理人身分」。</p>
+    <button onclick="bindLine()">立即綁定我的 LINE</button>
+  </div>
+
+  <!-- 步驟 3: 完成 -->
+  <div id="step-3" class="step">
+    <h2>註冊資料已送出</h2>
+    <p>身分抓取成功！請通知管理員進行最後審核。審核通過後，您即可使用 LINE 登入管理您的平台。</p>
+  </div>
+
+  <script>
+    const WORKER_URL = 'https://ecbusiness.fangwl591021.workers.dev';
+    const LIFF_ID = '2009930620-98JTuN5O'; // 使用主系統 LIFF ID 進行認證
+    const params = new URLSearchParams(window.location.search);
+    const tenantId = params.get('tenantId');
+
+    if (!tenantId) { document.getElementById('loading').innerText = '無效的連結'; }
+
+    async function init() {
+      await liff.init({ liffId: LIFF_ID });
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('step-1').classList.add('active');
+    }
+
+    async function submitInfo() {
+      const name = document.getElementById('tenant-name').value;
+      if (!name) return alert("請填寫名稱");
+      
+      await fetch(`${WORKER_URL}/?action=tenant_register&tenantId=${tenantId}`, {
+        method: 'POST',
+        body: JSON.stringify({ tenantName: name })
+      });
+      
+      document.getElementById('step-1').classList.remove('active');
+      document.getElementById('step-2').classList.add('active');
+    }
+
+    async function bindLine() {
+      if (!liff.isLoggedIn()) {
+        liff.login({ redirectUri: window.location.href });
+      } else {
+        const profile = await liff.getProfile();
+        await fetch(`${WORKER_URL}/?action=tenant_bind&tenantId=${tenantId}`, {
+          method: 'POST',
+          body: JSON.stringify({ userId: profile.userId })
+        });
+        document.getElementById('step-2').classList.remove('active');
+        document.getElementById('step-3').classList.add('active');
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
