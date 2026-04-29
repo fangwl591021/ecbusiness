@@ -10,70 +10,76 @@
     .section { display: none; }
     .active { display: block; }
     
-    /* LINE OA 原生資訊流樣式 */
+    /* 原生資訊流樣式：無框線、灰字標題、不加粗 */
     .label { font-size: 13px; color: #999999; margin-bottom: 4px; display: block; }
-    input { display: block; width: 100%; margin-bottom: 20px; padding: 10px 0; border: none; border-bottom: 1px solid #eeeeee; font-size: 15px; box-sizing: border-box; color: #111111; background: transparent; border-radius: 0; }
+    input { display: block; width: 100%; margin-bottom: 24px; padding: 10px 0; border: none; border-bottom: 1px solid #eeeeee; font-size: 15px; color: #111111; background: transparent; border-radius: 0; }
     input:focus { outline: none; border-bottom: 1px solid #00B900; }
     
-    button { background-color: #00B900; color: #ffffff; border: none; padding: 12px; width: 100%; font-size: 15px; border-radius: 4px; cursor: pointer; transition: 0.2s; }
+    button { background-color: #00B900; color: #ffffff; border: none; padding: 12px; width: 100%; font-size: 15px; border-radius: 4px; cursor: pointer; }
     .btn-secondary { background-color: #f5f5f5; color: #111111; margin-top: 10px; }
     
     .header { display: flex; align-items: center; margin-bottom: 20px; }
     .avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; margin-right: 12px; background-color: #f8f8f8; }
     .name { font-size: 17px; margin-bottom: 2px; }
     .sub { font-size: 13px; color: #999999; }
-    .info-row { font-size: 14px; margin-bottom: 10px; color: #333333; }
     
-    #loading { text-align: center; padding-top: 40px; color: #999999; font-size: 14px; }
+    #loading { text-align: center; padding-top: 40px; color: #999; font-size: 14px; }
+    
+    /* 除錯輸入框樣式 */
+    #debug-input { padding: 20px; border: 1px dashed #ccc; margin-top: 20px; border-radius: 8px; background: #fafafa; }
   </style>
 </head>
 <body>
   <div id="loading">身分辨認中...</div>
 
-  <!-- 1. 商家註冊區 (status: pending) -->
+  <!-- 參數遺失補救區 (僅在 blob 或無參數網址出現) -->
+  <div id="section-debug" class="section">
+    <div id="debug-input">
+      <p style="font-size:14px; color:#666;">偵測到預覽環境參數遺失，請手動輸入：</p>
+      <span class="label">商家代號 (tenantId)</span>
+      <input type="text" id="manual-tenant" placeholder="例如: L-LINK">
+      <span class="label">LIFF ID</span>
+      <input type="text" id="manual-liff" value="2009930620-98JTuN5O">
+      <button onclick="manualStart()">確認並開始測試</button>
+    </div>
+  </div>
+
+  <!-- 1. 商家註冊與身分綁定介面 -->
   <div id="section-onboarding" class="section">
     <span class="label">商家名稱</span>
-    <input type="text" id="reg-name" placeholder="請填寫您的公司或店家名稱">
-    <p style="font-size: 13px; color: #999; margin-bottom: 20px;">點擊下方按鈕將抓取您的 LINE 身分進行授權綁定。</p>
+    <input type="text" id="reg-name" placeholder="請填寫名稱">
     <button onclick="bindIdentity()">抓取並綁定我的 LINE</button>
   </div>
 
-  <!-- 2. 等待開通區 (status: binding) -->
+  <!-- 2. 等待審核介面 -->
   <div id="section-status" class="section" style="text-align:center; padding-top:60px;">
-    <p style="color:#999; font-size:14px;">身分抓取成功！<br>請聯繫管理員回填核准，開通您的服務。</p>
+    <p style="color:#999; font-size:14px;">身分抓取成功！<br>請通知管理員回填核准，開通您的服務。</p>
     <button class="btn-secondary" onclick="location.reload()">重新整理狀態</button>
   </div>
 
-  <!-- 3. 名片功能區 (status: active) -->
+  <!-- 3. 名片功能介面 -->
   <div id="section-view" class="section">
     <div class="header">
       <img id="view-avatar" class="avatar" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=">
-      <div class="name-title">
+      <div>
         <div id="view-name" class="name"></div>
         <div id="view-sub" class="sub"></div>
       </div>
     </div>
-    <div class="info-row" id="view-phone"></div>
-    <div class="info-row" id="view-email"></div>
     <div style="display: flex; gap: 10px; margin-top: 30px;">
       <button onclick="sendMsg()">傳送名片</button>
-      <button class="btn-secondary" onclick="shareMsg()">分享好友</button>
     </div>
-    <button style="background:none; color:#00B900; margin-top:10px;" onclick="showSection('edit')">更新我的資料</button>
+    <button style="background:none; color:#00B900; margin-top:10px" onclick="showSection('edit')">編輯名片資料</button>
   </div>
 
-  <!-- 4. 名片編輯區 -->
+  <!-- 4. 名片編輯介面 -->
   <div id="section-edit" class="section">
     <span class="label">姓名</span>
     <input type="text" id="edit-name">
     <span class="label">職稱公司</span>
     <input type="text" id="edit-title">
-    <span class="label">電話</span>
+    <span class="label">行動電話</span>
     <input type="tel" id="edit-phone">
-    <span class="label">信箱</span>
-    <input type="email" id="edit-email">
-    <span class="label">頭像網址</span>
-    <input type="url" id="edit-avatar">
     <button onclick="saveCard()">儲存資料</button>
   </div>
 
@@ -84,22 +90,79 @@
     function showSection(id) {
       document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
       document.getElementById('loading').style.display = 'none';
-      document.getElementById('section-' + id).classList.add('active');
+      const target = document.getElementById('section-' + id);
+      if (target) target.classList.add('active');
+    }
+
+    /**
+     * 解析 URL 參數：支援多種跳轉後的參數恢復
+     */
+    function resolveParams() {
+      const urlObj = new URL(window.location.href);
+      let tId = urlObj.searchParams.get('tenantId');
+      let lId = urlObj.searchParams.get('liffId');
+
+      if (!tId || !lId) {
+        const hash = window.location.hash;
+        if (hash.includes('?')) {
+          const hashParams = new URLSearchParams(hash.split('?')[1]);
+          tId = tId || hashParams.get('tenantId');
+          lId = lId || hashParams.get('liffId');
+        }
+      }
+
+      if (!tId || !lId) {
+        const state = urlObj.searchParams.get('liff.state') || 
+                      (window.location.hash.includes('liff.state') ? new URLSearchParams(window.location.hash.split('?')[1] || window.location.hash.replace('#','?')).get('liff.state') : null);
+        if (state) {
+          try {
+            const decodedState = decodeURIComponent(state);
+            const stateParams = new URLSearchParams(decodedState.includes('?') ? decodedState.split('?')[1] : decodedState);
+            tId = tId || stateParams.get('tenantId');
+            lId = lId || stateParams.get('liffId');
+          } catch(e) {}
+        }
+      }
+
+      tenantId = tId;
+      liffId = lId;
     }
 
     async function init() {
-      const p = new URLSearchParams(window.location.search);
-      tenantId = p.get('tenantId'); liffId = p.get('liffId');
-      if (!tenantId || !liffId) { document.getElementById('loading').innerText = '網址參數錯誤'; return; }
+      resolveParams();
 
-      await liff.init({ liffId: liffId });
-      if (!liff.isLoggedIn()) {
-        liff.login({ redirectUri: window.location.href });
+      // 如果解析後還是 null，則顯示手動輸入介面 (針對 blob 網址預覽環境)
+      if (!tenantId || !liffId) {
+        showSection('debug');
+        console.warn("偵測到參數丟失，已開啟手動補救模式。");
         return;
       }
-      const profile = await liff.getProfile();
-      userId = profile.userId;
-      checkStatus();
+
+      try {
+        await liff.init({ liffId: liffId });
+        if (!liff.isLoggedIn()) {
+          liff.login({ redirectUri: window.location.href });
+          return;
+        }
+        const profile = await liff.getProfile();
+        userId = profile.userId;
+        checkStatus();
+      } catch (err) {
+        document.getElementById('loading').innerText = 'LINE 認證初始化失敗。';
+      }
+    }
+
+    /**
+     * 手動開始測試 (針對開發環境)
+     */
+    function manualStart() {
+      tenantId = document.getElementById('manual-tenant').value.trim();
+      liffId = document.getElementById('manual-liff').value.trim();
+      if(!tenantId || !liffId) return alert("請完整填寫參數");
+      
+      document.getElementById('section-debug').classList.remove('active');
+      document.getElementById('loading').style.display = 'block';
+      init();
     }
 
     async function checkStatus() {
@@ -115,7 +178,8 @@
       const name = document.getElementById('reg-name').value;
       if (!name) return alert('請填寫商家名稱');
       await fetch(`${API}/?action=tenant_bind&tenantId=${tenantId}`, {
-        method: 'POST', body: JSON.stringify({ tenantName: name, userId: userId })
+        method: 'POST',
+        body: JSON.stringify({ tenantName: name, userId: userId })
       });
       location.reload();
     }
@@ -123,19 +187,11 @@
     async function loadCard() {
       const res = await fetch(`${API}/?action=get&tenantId=${tenantId}&userId=${userId}`);
       cardData = await res.json();
-      if (!cardData.name) showSection('edit');
-      else {
+      if (!cardData.name) {
+        showSection('edit');
+      } else {
         document.getElementById('view-name').innerText = cardData.name;
         document.getElementById('view-sub').innerText = cardData.title;
-        document.getElementById('view-phone').innerText = 'Mobile: ' + cardData.phone;
-        document.getElementById('view-email').innerText = 'Email: ' + cardData.email;
-        if (cardData.avatar) document.getElementById('view-avatar').src = cardData.avatar;
-        
-        document.getElementById('edit-name').value = cardData.name;
-        document.getElementById('edit-title').value = cardData.title;
-        document.getElementById('edit-phone').value = cardData.phone;
-        document.getElementById('edit-email').value = cardData.email;
-        document.getElementById('edit-avatar').value = cardData.avatar;
         showSection('view');
       }
     }
@@ -144,22 +200,33 @@
       const name = document.getElementById('edit-name').value;
       if (!name) return alert('請填寫姓名');
       await fetch(`${API}/?action=save&tenantId=${tenantId}&userId=${userId}`, {
-        method: 'POST', body: JSON.stringify({
-          name, title: document.getElementById('edit-title').value,
+        method: 'POST',
+        body: JSON.stringify({
+          name: name,
+          title: document.getElementById('edit-title').value,
           phone: document.getElementById('edit-phone').value,
-          email: document.getElementById('edit-email').value,
-          avatar: document.getElementById('edit-avatar').value,
           duration: 30
         })
       });
       loadCard();
     }
 
-    function buildFlex() {
-      return { type: "flex", altText: `${cardData.name} 的名片`, contents: { type: "bubble", size: "kilo", body: { type: "box", layout: "vertical", contents: [ { type: "box", layout: "horizontal", contents: [ { type: "image", url: cardData.avatar || "https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png", size: "sm", aspectMode: "cover", aspectRatio: "1:1", flex: 1 }, { type: "box", layout: "vertical", contents: [ { type: "text", text: cardData.name, size: "md", color: "#111111" }, { type: "text", text: cardData.title, size: "sm", color: "#999999", margin: "xs" } ], flex: 3, margin: "md", justifyContent: "center" } ] }, { type: "text", text: `Mobile: ${cardData.phone}`, size: "sm", color: "#333333", margin: "md" }, { type: "text", text: `Email: ${cardData.email}`, size: "sm", color: "#333333", margin: "xs" } ], paddingAll: "md" } } };
+    async function sendMsg() {
+      try {
+        await liff.sendMessages([{
+          type: "flex", altText: "數位名片",
+          contents: { 
+            type: "bubble", 
+            body: { 
+              type: "box", 
+              layout: "vertical", 
+              contents: [{ type: "text", text: cardData.name, weight: "bold", size: "xl" }] 
+            } 
+          }
+        }]);
+        liff.closeWindow();
+      } catch (e) {}
     }
-    async function sendMsg() { await liff.sendMessages([buildFlex()]); liff.closeWindow(); }
-    async function shareMsg() { await liff.shareTargetPicker([buildFlex()]); liff.closeWindow(); }
 
     init();
   </script>
