@@ -5,116 +5,215 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SaaS 總管後台</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; color: #111; margin: 0; background-color: #f8f9fa; }
-    .container { max-width: 1100px; margin: 0 auto; background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    body { font-family: sans-serif; margin: 0; padding: 0; background-color: #f8f9fa; color: #111; display: flex; height: 100vh; }
     .hidden { display: none !important; }
-    .header { font-size: 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
-    table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 10px; }
-    th { text-align: left; background: #fcfcfc; padding: 12px; border-bottom: 2px solid #eee; color: #666; font-weight: normal; }
-    td { padding: 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
-    input { display: block; width: 100%; margin-bottom: 16px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-    button { background-color: #00B900; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; transition: 0.2s; }
-    button:hover { opacity: 0.8; }
-    .btn-copy { background-color: #1890ff; font-size: 12px; padding: 4px 8px; margin-bottom: 4px; }
-    .status-pending { color: #999; }
-    .status-binding { color: #faad14; font-weight: bold; }
+    
+    /* 側邊欄設計 */
+    .sidebar { width: 240px; background: #ffffff; border-right: 1px solid #eeeeee; display: flex; flex-direction: column; }
+    .sidebar-header { padding: 24px; font-size: 18px; color: #00B900; }
+    .sidebar-menu { flex: 1; padding: 10px 0; }
+    .menu-item { padding: 12px 24px; font-size: 14px; cursor: pointer; color: #666; transition: 0.2s; }
+    .menu-item:hover { background: #f9f9f9; color: #111; }
+    .menu-item.active { color: #00B900; font-weight: bold; }
+    
+    /* 主內容區 */
+    .main-content { flex: 1; overflow-y: auto; padding: 30px; display: flex; flex-direction: column; }
+    .content-card { background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th { text-align: left; padding: 12px; border-bottom: 2px solid #f0f0f0; color: #999; font-weight: normal; }
+    td { padding: 16px 12px; border-bottom: 1px solid #f9f9f9; }
+    
+    input, select { display: block; width: 100%; margin-bottom: 16px; padding: 12px 0; border: none; border-bottom: 1px solid #eee; font-size: 14px; box-sizing: border-box; }
+    input:focus { outline: none; border-bottom: 1px solid #00B900; }
+    
+    button { background-color: #00B900; color: #fff; border: none; padding: 10px 20px; border-radius: 4px; font-size: 14px; cursor: pointer; }
+    .btn-outline { background: none; color: #666; border: 1px solid #ddd; }
+    .btn-danger { background: #ff4d4f; padding: 8px; }
+    
     .status-active { color: #00B900; }
+    .status-binding { color: #faad14; }
+    .status-pending { color: #999; }
+
+    #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+    .modal { background: #fff; padding: 24px; border-radius: 8px; width: 320px; text-align: center; }
   </style>
 </head>
 <body>
-<div class="container">
-  <div id="login-section">
-    <div class="header">總管登入</div>
-    <input type="password" id="admin-key" placeholder="管理密碼">
-    <button onclick="login()" style="width: 100%;">進入管理後台</button>
+
+  <!-- 左側儀表板 -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">SaaS 管理系統</div>
+    <div class="sidebar-menu">
+      <div class="menu-item active" onclick="showView('list')">商家授權管理</div>
+      <div class="menu-item" onclick="openSS()">查看 Google 報表</div>
+      <div class="menu-item" onclick="location.reload()">重新整理</div>
+    </div>
   </div>
 
-  <div id="list-section" class="hidden">
-    <div class="header">商家授權管理 <button onclick="preCreate()">＋ 預開帳號</button></div>
-    <table>
-      <thead>
-        <tr>
-          <th>商家名稱/代號</th>
-          <th>操作網址</th>
-          <th>綁定身分 (LINE ID)</th>
-          <th>狀態</th>
-          <th>管理</th>
-        </tr>
-      </thead>
-      <tbody id="table-body"></tbody>
-    </table>
+  <!-- 右側資料區 -->
+  <div class="main-content">
+    
+    <!-- 登入區域 -->
+    <div id="login-section" class="content-card">
+      <h3 style="margin-top:0">管理員登入</h3>
+      <input type="password" id="admin-key" placeholder="請輸入管理密碼">
+      <button onclick="login()" style="width: 100%">進入系統</button>
+    </div>
+
+    <!-- 清單區域 -->
+    <div id="list-section" class="hidden">
+      <div class="header-row">
+        <h3 style="margin:0">商家名單</h3>
+        <button onclick="showView('form')">＋ 預開帳號</button>
+      </div>
+      <div class="content-card">
+        <table>
+          <thead>
+            <tr>
+              <th>商家</th>
+              <th>狀態</th>
+              <th>綁定 UID</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 表單區域 -->
+    <div id="form-section" class="hidden">
+      <div class="header-row">
+        <h3 id="form-title">商家設定</h3>
+        <button class="btn-outline" onclick="showView('list')">返回</button>
+      </div>
+      <div class="content-card">
+        <div style="font-size:12px; color:#999; margin-bottom:4px">商家代號 (不可改)</div>
+        <input type="text" id="t-id" placeholder="如: sogo01">
+        <div style="font-size:12px; color:#999; margin-bottom:4px">商家名稱</div>
+        <input type="text" id="t-name" placeholder="如: 崇光百貨">
+        <div style="font-size:12px; color:#999; margin-bottom:4px">服務狀態</div>
+        <select id="t-status">
+          <option value="pending">pending (待填寫)</option>
+          <option value="binding">binding (待開通)</option>
+          <option value="active">active (已開通)</option>
+          <option value="suspended">suspended (停用)</option>
+        </select>
+        <button onclick="saveTenant()" style="width:100%">儲存設定</button>
+      </div>
+    </div>
+
   </div>
-</div>
 
-<script>
-  const WORKER_URL = 'https://ecbusiness.fangwl591021.workers.dev';
-  const SYSTEM_LIFF = '2009930620-98JTuN5O';
-  const BASE_PAGE = 'https://fangwl591021.github.io/action/index.html';
-  let adminKey = '';
+  <!-- 訊息彈窗 -->
+  <div id="overlay">
+    <div class="modal">
+      <div id="modal-msg" style="margin-bottom:20px; font-size:14px; line-height:1.6"></div>
+      <div id="confirm-box" class="hidden" style="display:flex; gap:10px">
+        <button id="btn-yes" style="flex:1">確定</button>
+        <button onclick="closeModal()" style="flex:1; background:#eee; color:#111">取消</button>
+      </div>
+      <button id="btn-ok" onclick="closeModal()" style="width:100%">我知道了</button>
+    </div>
+  </div>
 
-  async function login() {
-    adminKey = document.getElementById('admin-key').value;
-    await load();
-  }
+  <script>
+    const WORKER = 'https://ecbusiness.fangwl591021.workers.dev';
+    const INDEX_PAGE = 'https://fangwl591021.github.io/action/index.html';
+    const SS_URL = 'https://docs.google.com/spreadsheets/d/1nsURHsvW-lGLlYQ4VZAEGo_lzi_5IBvekQ1542T3hw8';
+    let adminKey = '';
 
-  async function load() {
-    const res = await fetch(`${WORKER_URL}?action=admin_list&adminKey=${encodeURIComponent(adminKey)}`);
-    if (res.ok) {
-      const data = await res.json();
-      render(data);
-      document.getElementById('login-section').classList.add('hidden');
-      document.getElementById('list-section').classList.remove('hidden');
+    function showModal(msg, isConfirm = false, onConfirm = null) {
+      document.getElementById('modal-msg').innerText = msg;
+      document.getElementById('overlay').style.display = 'flex';
+      document.getElementById('confirm-box').classList.toggle('hidden', !isConfirm);
+      document.getElementById('btn-ok').classList.toggle('hidden', isConfirm);
+      if(isConfirm) document.getElementById('btn-yes').onclick = () => { onConfirm(); closeModal(); };
     }
-  }
+    function closeModal() { document.getElementById('overlay').style.display = 'none'; }
+    function openSS() { window.open(SS_URL, '_blank'); }
 
-  function render(list) {
-    const body = document.getElementById('table-body');
-    body.innerHTML = '';
-    list.forEach(t => {
-      const targetUrl = `${BASE_PAGE}?liffId=${t.liffId || SYSTEM_LIFF}&tenantId=${t.tenantId}`;
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td><strong>${t.tenantName || '(未填寫)'}</strong><br><small style="color:#aaa">${t.tenantId}</small></td>
-        <td><button class="btn-copy" onclick="copyText('${targetUrl}')">複製專屬連結</button></td>
-        <td><small>${t.adminUserId || '尚未綁定'}</small></td>
-        <td><span class="status-${t.status}">${t.status}</span></td>
-        <td>
-          ${t.status === 'binding' ? `<button onclick="approve('${t.tenantId}')">核准開通</button>` : ''}
-          ${t.status === 'active' ? `<button style="background:#ff4d4f" onclick="suspend('${t.tenantId}')">停用</button>` : ''}
-          ${t.status === 'pending' ? `<button style="background:#f5f5f5; color:#111" onclick="del('${t.tenantId}')">刪除</button>` : ''}
-        </td>
-      `;
-      body.appendChild(row);
-    });
-  }
+    function showView(view) {
+      document.getElementById('list-section').classList.toggle('hidden', view !== 'list');
+      document.getElementById('form-section').classList.toggle('hidden', view !== 'form');
+    }
 
-  async function preCreate() {
-    const id = prompt("請輸入新商家的唯一代號 (英文):");
-    if (!id) return;
-    await fetch(`${WORKER_URL}?action=admin_save&adminKey=${encodeURIComponent(adminKey)}`, {
-      method: 'POST',
-      body: JSON.stringify({ tenantId: id, status: 'pending', liffId: SYSTEM_LIFF })
-    });
-    load();
-  }
+    async function login() {
+      adminKey = document.getElementById('admin-key').value;
+      await loadList();
+    }
 
-  async function approve(id) {
-    await fetch(`${WORKER_URL}?action=admin_save&adminKey=${encodeURIComponent(adminKey)}`, {
-      method: 'POST',
-      body: JSON.stringify({ tenantId: id, status: 'active' })
-    });
-    load();
-  }
+    async function loadList() {
+      const res = await fetch(`${WORKER}/?action=admin_list&adminKey=${encodeURIComponent(adminKey)}`);
+      if (res.ok) {
+        const data = await res.json();
+        render(data);
+        document.getElementById('login-section').classList.add('hidden');
+        showView('list');
+      } else { showModal("登入失敗，請確認密碼。"); }
+    }
 
-  function copyText(text) {
-    const el = document.createElement('textarea');
-    el.value = text;
-    document.body.appendChild(el);
-    el.select();
-    document.execCommand('copy');
-    document.body.removeChild(el);
-    alert('連結已複製');
-  }
-</script>
+    function render(list) {
+      const body = document.getElementById('table-body');
+      body.innerHTML = '';
+      list.forEach(t => {
+        const regUrl = `${INDEX_PAGE}?liffId=2009930620-98JTuN5O&tenantId=${t.tenantId}`;
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td><strong>${t.tenantName || t.tenantId}</strong><br><small style="color:#aaa; cursor:pointer" onclick="copyText('${regUrl}')">點此複製連結</small></td>
+          <td class="status-${t.status}">${t.status}</td>
+          <td><small>${t.adminUserId || '未綁定'}</small></td>
+          <td style="display:flex; gap:5px">
+            <button class="btn-outline" style="padding:5px 10px" onclick="editTenant('${t.tenantId}','${t.tenantName}','${t.status}')">改</button>
+            <button class="btn-danger" onclick="delTenant('${t.tenantId}')">×</button>
+          </td>
+        `;
+        body.appendChild(row);
+      });
+    }
+
+    function editTenant(id, name, status) {
+      document.getElementById('t-id').value = id;
+      document.getElementById('t-id').readOnly = true;
+      document.getElementById('t-name').value = name === 'undefined' ? '' : name;
+      document.getElementById('t-status').value = status;
+      showView('form');
+    }
+
+    async function saveTenant() {
+      const tenantId = document.getElementById('t-id').value.trim();
+      const tenantName = document.getElementById('t-name').value.trim();
+      const status = document.getElementById('t-status').value;
+      if (!tenantId) return showModal("請填寫代號");
+      
+      await fetch(`${WORKER}/?action=admin_save&adminKey=${encodeURIComponent(adminKey)}`, {
+        method: 'POST',
+        body: JSON.stringify({ tenantId, tenantName, status })
+      });
+      await loadList();
+    }
+
+    async function delTenant(id) {
+      showModal(`確定刪除 [${id}]？R2 資料將消失。`, true, async () => {
+        await fetch(`${WORKER}/?action=admin_delete&adminKey=${encodeURIComponent(adminKey)}`, {
+          method: 'POST',
+          body: JSON.stringify({ tenantId: id })
+        });
+        await loadList();
+      });
+    }
+
+    function copyText(text) {
+      const el = document.createElement('textarea');
+      el.value = text;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      showModal('註冊連結已複製，請發送給客戶。');
+    }
+  </script>
 </body>
 </html>
