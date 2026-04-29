@@ -5,167 +5,160 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SaaS 總管後台</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; color: #111; margin: 0; background-color: #f8f9fa; }
-    .container { max-width: 1000px; margin: 0 auto; background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    body { font-family: sans-serif; padding: 20px; color: #111; margin: 0; background-color: #f4f6f8; }
+    .container { max-width: 1000px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
     .hidden { display: none !important; }
-    .header { font-size: 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 16px; }
+    .header { font-size: 22px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f2f5; padding-bottom: 16px; }
     
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-    th { text-align: left; background: #fcfcfc; padding: 12px; border-bottom: 2px solid #eee; color: #666; }
-    td { padding: 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th { text-align: left; background: #fcfcfc; padding: 15px; border-bottom: 2px solid #eee; color: #666; font-size: 14px; }
+    td { padding: 15px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; font-size: 14px; }
     
-    input, select { display: block; width: 100%; margin-bottom: 16px; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box; }
+    input, select { display: block; width: 100%; margin-bottom: 16px; padding: 12px; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
     input:focus { outline: none; border-color: #00B900; }
     
-    button { background-color: #00B900; color: #fff; border: none; padding: 10px 20px; font-size: 14px; border-radius: 4px; cursor: pointer; }
-    .btn-delete { background-color: #ff4d4f; margin-left: 8px; }
+    button { background-color: #00B900; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; transition: 0.2s; font-size: 14px; }
+    button:hover { opacity: 0.85; }
+    .btn-danger { background-color: #ff4d4f; }
     .btn-edit { background-color: #1890ff; }
-    .text-btn { background: none; color: #999; padding: 10px; width: 100%; margin-top: 8px; }
+    .btn-ghost { background: none; color: #999; margin-top: 10px; width: 100%; }
 
-    .status-tag { padding: 4px 8px; border-radius: 4px; font-size: 12px; }
-    .status-active { background: #e6f7ff; color: #1890ff; border: 1px solid #91d5ff; }
-    .status-suspended { background: #fff1f0; color: #ff4d4f; border: 1px solid #ffa39e; }
+    .status-tag { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+    .active { background: #e6f7ff; color: #1890ff; border: 1px solid #91d5ff; }
+    .suspended { background: #fff1f0; color: #ff4d4f; border: 1px solid #ffa39e; }
 
-    #message-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
-    .message-box { background: #fff; padding: 30px; border-radius: 8px; width: 320px; text-align: center; }
-    .message-text { font-size: 14px; margin-bottom: 20px; line-height: 1.5; color: #444; }
-    .confirm-btns { display: flex; gap: 10px; margin-top: 20px; }
-    .confirm-btns button { flex: 1; }
+    #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
+    .modal { background: #fff; padding: 30px; border-radius: 12px; width: 340px; text-align: center; }
   </style>
 </head>
 <body>
 
 <div class="container">
+  <!-- 登入介面 -->
   <div id="login-section">
-    <div class="header">總管登入</div>
-    <input type="password" id="admin-key" placeholder="管理密碼">
-    <button onclick="login()" style="width: 100%;">進入管理後台</button>
+    <div class="header">SaaS 數位商務管理</div>
+    <input type="password" id="admin-key" placeholder="請輸入管理密碼">
+    <button onclick="login()" style="width: 100%;">進入系統</button>
   </div>
 
+  <!-- 店家列表表格 -->
   <div id="list-section" class="hidden">
     <div class="header">
-      店家清單 
-      <button onclick="showForm()">＋新增店家</button>
+      商家授權清單 
+      <button onclick="showForm()">＋ 註冊新商家</button>
     </div>
     <table>
       <thead>
         <tr>
-          <th>商家名稱</th>
-          <th>LIFF ID</th>
-          <th>狀態</th>
-          <th style="width: 160px;">操作</th>
+          <th>商家名稱 / 代號</th>
+          <th>LIFF 通道</th>
+          <th>服務狀態</th>
+          <th style="width: 150px;">操作</th>
         </tr>
       </thead>
-      <tbody id="tenant-table-body"></tbody>
+      <tbody id="table-body"></tbody>
     </table>
   </div>
 
+  <!-- 店家註冊表單 -->
   <div id="form-section" class="hidden">
-    <div class="header" id="form-title">註冊新店家</div>
-    <input type="text" id="tenant-id" placeholder="商家代號 (不可重複, 如: sogo01)">
-    <input type="text" id="tenant-name" placeholder="商家名稱 (顯示用, 如: 太平洋百貨)">
-    <input type="text" id="liff-id" placeholder="LIFF ID">
+    <div class="header" id="form-title">註冊店家</div>
+    <div style="font-size: 13px; color: #888; margin-bottom: 5px;">商家唯一代號 (建議用英文，存檔後不可改)</div>
+    <input type="text" id="tenant-id" placeholder="例如: shop_abc">
+    <div style="font-size: 13px; color: #888; margin-bottom: 5px;">商家顯示名稱 (方便總監管理)</div>
+    <input type="text" id="tenant-name" placeholder="例如: 勝利數位名片工作室">
+    <div style="font-size: 13px; color: #888; margin-bottom: 5px;">LIFF ID</div>
+    <input type="text" id="liff-id">
+    <div style="font-size: 13px; color: #888; margin-bottom: 5px;">付費開通狀態</div>
     <select id="tenant-status">
       <option value="active">已開通 (Active)</option>
       <option value="suspended">已停用 (Suspended)</option>
     </select>
-    <button onclick="saveTenant()" style="width: 100%;">儲存並生效</button>
-    <button class="text-btn" onclick="showList()">返回列表</button>
+    <button onclick="saveTenant()" style="width: 100%;">儲存授權設定</button>
+    <button class="btn-ghost" onclick="showList()">返回清單</button>
   </div>
 </div>
 
-<div id="message-overlay">
-  <div class="message-box">
-    <div id="message-content" class="message-text"></div>
-    <div id="confirm-btns" class="confirm-btns hidden">
-      <button id="btn-confirm-yes">確定</button>
-      <button id="btn-confirm-no" style="background:#ccc;">取消</button>
+<div id="overlay">
+  <div class="modal">
+    <div id="modal-text" style="margin-bottom: 20px; font-size: 15px;"></div>
+    <div id="modal-confirm" class="hidden">
+        <button id="confirm-yes" style="margin-right: 10px;">確定</button>
+        <button id="confirm-no" style="background:#ccc;">取消</button>
     </div>
-    <button id="btn-message-ok" onclick="closeMessage()" style="width:100%; margin-top:15px;">我知道了</button>
+    <button id="modal-ok" onclick="closeModal()">確認</button>
   </div>
 </div>
 
 <script>
-  // 修正網址，確保末尾沒有多餘斜槓影響拼接
-  const BASE_URL = 'https://ecbusiness.fangwl591021.workers.dev'.replace(/\/$/, "");
-  const MAIN_LIFF_ID = '2009930620-98JTuN5O';
-  let adminKey = '';
+  const WORKER_URL = 'https://ecbusiness.fangwl591021.workers.dev';
+  const DEFAULT_LIFF = '2009930620-98JTuN5O';
+  let authKey = '';
 
-  function showMessage(text, isConfirm = false, onConfirm = null) {
-    console.log("System Message:", text);
-    document.getElementById('message-content').innerText = text;
-    document.getElementById('message-overlay').style.display = 'flex';
-    if (isConfirm) {
-      document.getElementById('confirm-btns').classList.remove('hidden');
-      document.getElementById('btn-message-ok').classList.add('hidden');
-      document.getElementById('btn-confirm-yes').onclick = () => { onConfirm(); closeMessage(); };
-      document.getElementById('btn-confirm-no').onclick = closeMessage;
+  function openModal(text, confirmMode = false, onConfirm = null) {
+    document.getElementById('modal-text').innerText = text;
+    document.getElementById('overlay').style.display = 'flex';
+    if (confirmMode) {
+      document.getElementById('modal-confirm').classList.remove('hidden');
+      document.getElementById('modal-ok').classList.add('hidden');
+      document.getElementById('confirm-yes').onclick = () => { onConfirm(); closeModal(); };
+      document.getElementById('confirm-no').onclick = closeModal;
     } else {
-      document.getElementById('confirm-btns').classList.add('hidden');
-      document.getElementById('btn-message-ok').classList.remove('hidden');
+      document.getElementById('modal-confirm').classList.add('hidden');
+      document.getElementById('modal-ok').classList.remove('hidden');
     }
   }
-  function closeMessage() { document.getElementById('message-overlay').style.display = 'none'; }
+  function closeModal() { document.getElementById('overlay').style.display = 'none'; }
 
   async function login() {
-    adminKey = document.getElementById('admin-key').value;
-    if (!adminKey) return showMessage("請輸入密碼");
-    await fetchTenants();
+    authKey = document.getElementById('admin-key').value;
+    if (!authKey) return openModal("請填寫密碼");
+    await loadTenants();
   }
 
-  async function fetchTenants() {
+  async function loadTenants() {
     try {
-      const apiPath = `${BASE_URL}/?action=admin_list&adminKey=${encodeURIComponent(adminKey)}`;
-      const res = await fetch(apiPath);
-      
-      if (!res.ok) {
-        if (res.status === 401) return showMessage("密碼錯誤，驗證失敗。");
-        throw new Error(`HTTP Error: ${res.status}`);
-      }
-
+      const res = await fetch(`${WORKER_URL}?action=admin_list&adminKey=${encodeURIComponent(authKey)}`);
+      if (res.status === 401) return openModal("管理密碼錯誤");
       const data = await res.json();
-      renderTable(data);
-      
+      render(data);
       document.getElementById('login-section').classList.add('hidden');
       document.getElementById('form-section').classList.add('hidden');
       document.getElementById('list-section').classList.remove('hidden');
-    } catch (e) {
-      console.error("Fetch Error:", e);
-      showMessage(`連線失敗！請確認 Worker 是否已正確部署。\n錯誤資訊: ${e.message}`);
-    }
+    } catch (e) { openModal("網路連線失敗，請檢查 Worker 設定"); }
   }
 
-  function renderTable(tenants) {
-    const tbody = document.getElementById('tenant-table-body');
-    tbody.innerHTML = tenants.length === 0 ? '<tr><td colspan="4" style="text-align:center; color:#999;">目前無店家資料</td></tr>' : '';
-    tenants.forEach(t => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><strong>${t.tenantName || t.tenantId}</strong><br><small style="color:#999">${t.tenantId}</small></td>
-        <td><code style="font-size:12px;">${t.liffId}</code></td>
-        <td><span class="status-tag status-${t.status}">${t.status === 'active' ? '已開通' : '已停用'}</span></td>
+  function render(list) {
+    const body = document.getElementById('table-body');
+    body.innerHTML = list.length === 0 ? '<tr><td colspan="4" style="text-align:center; color:#999; padding:40px;">目前尚無註冊商家</td></tr>' : '';
+    list.forEach(t => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td><strong>${t.tenantName || '未命名商家'}</strong><br><small style="color:#aaa">${t.tenantId}</small></td>
+        <td><code style="font-size:12px; color:#888;">${t.liffId}</code></td>
+        <td><span class="status-tag ${t.status}">${t.status === 'active' ? '服務中' : '已暫停'}</span></td>
         <td>
           <button class="btn-edit" onclick="editTenant('${t.tenantId}', '${t.tenantName || ''}', '${t.liffId}', '${t.status}')">編輯</button>
-          <button class="btn-delete" onclick="deleteTenant('${t.tenantId}')">刪除</button>
+          <button class="btn-danger" style="padding: 10px;" onclick="delTenant('${t.tenantId}')">×</button>
         </td>
       `;
-      tbody.appendChild(tr);
+      body.appendChild(row);
     });
   }
 
   function showForm() {
-    document.getElementById('form-title').innerText = "註冊新店家";
+    document.getElementById('form-title').innerText = "註冊新商家";
     document.getElementById('tenant-id').value = "";
     document.getElementById('tenant-id').readOnly = false;
     document.getElementById('tenant-name').value = "";
-    document.getElementById('liff-id').value = MAIN_LIFF_ID;
+    document.getElementById('liff-id').value = DEFAULT_LIFF;
     document.getElementById('tenant-status').value = "active";
     document.getElementById('list-section').classList.add('hidden');
     document.getElementById('form-section').classList.remove('hidden');
   }
 
   function editTenant(id, name, liff, status) {
-    document.getElementById('form-title').innerText = "管理店家授權";
+    document.getElementById('form-title').innerText = "編輯商家授權";
     document.getElementById('tenant-id').value = id;
     document.getElementById('tenant-id').readOnly = true;
     document.getElementById('tenant-name').value = name;
@@ -180,40 +173,27 @@
   async function saveTenant() {
     const tenantId = document.getElementById('tenant-id').value.trim();
     const tenantName = document.getElementById('tenant-name').value.trim();
-    const liffId = document.getElementById('liff-id').value.trim() || MAIN_LIFF_ID;
+    const liffId = document.getElementById('liff-id').value.trim() || DEFAULT_LIFF;
     const status = document.getElementById('tenant-status').value;
-    
-    if (!tenantId) return showMessage("商家代號不能為空");
-
+    if (!tenantId) return openModal("代號為必填項");
     try {
-      const res = await fetch(`${BASE_URL}/?action=admin_save&adminKey=${encodeURIComponent(adminKey)}`, {
+      await fetch(`${WORKER_URL}?action=admin_save&adminKey=${encodeURIComponent(authKey)}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tenantId, tenantName, liffId, status })
       });
-      
-      if (!res.ok) throw new Error(`Save failed: ${res.status}`);
-      
-      await fetchTenants();
-    } catch (e) {
-      console.error("Save Error:", e);
-      showMessage("儲存失敗，請檢查網路連線或 Worker 狀態。");
-    }
+      await loadTenants();
+    } catch (e) { openModal("存檔失敗"); }
   }
 
-  async function deleteTenant(id) {
-    showMessage(`警告：確定要刪除商家 [${id}] 嗎？此動作將移除該商家所有名片資料！`, true, async () => {
+  async function delTenant(id) {
+    openModal(`確定要刪除商家 [${id}] 嗎？此動作將移除該商家在 R2 的所有配置檔案！`, true, async () => {
       try {
-        const res = await fetch(`${BASE_URL}/?action=admin_delete&adminKey=${encodeURIComponent(adminKey)}`, {
+        await fetch(`${WORKER_URL}?action=admin_delete&adminKey=${encodeURIComponent(authKey)}`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ tenantId: id })
         });
-        if (!res.ok) throw new Error("Delete failed");
-        await fetchTenants();
-      } catch (e) {
-        showMessage("刪除失敗");
-      }
+        await loadTenants();
+      } catch (e) { openModal("刪除失敗"); }
     });
   }
 </script>
