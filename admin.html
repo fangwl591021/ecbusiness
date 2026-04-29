@@ -2,201 +2,204 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SaaS 總管後台</title>
   <style>
-    body { font-family: sans-serif; padding: 16px; color: #111111; margin: 0; background-color: #ffffff; }
+    body { font-family: sans-serif; padding: 20px; color: #111; margin: 0; background-color: #f8f9fa; }
+    .container { max-width: 1000px; margin: 0 auto; background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     .hidden { display: none !important; }
+    .header { font-size: 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 16px; }
     
-    .header { font-size: 18px; margin-bottom: 24px; color: #111; display: flex; justify-content: space-between; align-items: center; }
-    .header button { width: auto; margin: 0; padding: 6px 12px; font-size: 13px; }
-
-    input, select { display: block; width: 100%; margin-bottom: 16px; padding: 12px 0; border: none; border-bottom: 1px solid #eeeeee; font-size: 14px; box-sizing: border-box; color: #111111; background: transparent; }
-    input:focus, select:focus { outline: none; border-bottom: 1px solid #00B900; }
+    /* 表格樣式優化 */
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+    th { text-align: left; background: #fcfcfc; padding: 12px; border-bottom: 2px solid #eee; color: #666; font-weight: normal; }
+    td { padding: 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
     
-    button { background-color: #00B900; color: #ffffff; border: none; padding: 12px; width: 100%; font-size: 14px; border-radius: 4px; margin-top: 10px; cursor: pointer; }
-    .text-btn { background-color: transparent; color: #00B900; border: none; padding: 12px 0; font-size: 14px; width: 100%; margin-top: 8px; }
+    input, select { display: block; width: 100%; margin-bottom: 16px; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box; }
+    input:focus { outline: none; border-color: #00B900; }
+    
+    button { background-color: #00B900; color: #fff; border: none; padding: 10px 20px; font-size: 14px; border-radius: 4px; cursor: pointer; transition: 0.2s; }
+    button:hover { opacity: 0.8; }
+    .btn-delete { background-color: #ff4d4f; margin-left: 8px; }
+    .btn-edit { background-color: #1890ff; }
+    .text-btn { background: none; color: #999; padding: 10px; width: 100%; margin-top: 8px; }
 
-    .list-item { padding: 16px 0; border-bottom: 1px solid #eeeeee; display: flex; justify-content: space-between; align-items: center; }
-    .list-info { flex: 1; }
-    .list-title { font-size: 16px; margin-bottom: 4px; color: #111; }
-    .list-sub { font-size: 13px; color: #999; }
-    .status-active { color: #00B900; }
-    .status-suspended { color: #ff3344; }
-    .edit-btn { background: #f5f5f5; color: #111; width: auto; padding: 8px 16px; margin: 0; border-radius: 4px; }
+    .status-tag { padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+    .status-active { background: #e6f7ff; color: #1890ff; border: 1px solid #91d5ff; }
+    .status-suspended { background: #fff1f0; color: #ff4d4f; border: 1px solid #ffa39e; }
 
-    #message-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; }
-    .message-box { background: #fff; padding: 24px; border-radius: 8px; width: 80%; max-width: 300px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-    .message-text { font-size: 14px; color: #111; margin-bottom: 20px; line-height: 1.5; }
-    .message-btn { background-color: #111; margin-top: 0; }
+    #message-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
+    .message-box { background: #fff; padding: 30px; border-radius: 8px; width: 320px; text-align: center; }
+    .message-text { font-size: 15px; margin-bottom: 20px; line-height: 1.5; }
+    .confirm-btns { display: flex; gap: 10px; }
+    .confirm-btns button { flex: 1; }
   </style>
 </head>
 <body>
 
-  <!-- 登入區塊 -->
+<div class="container">
+  <!-- 登入區 -->
   <div id="login-section">
     <div class="header">總管登入</div>
-    <input type="password" id="admin-key" placeholder="請輸入管理密碼">
-    <button onclick="login()">登入系統</button>
+    <input type="password" id="admin-key" placeholder="管理密碼">
+    <button onclick="login()" style="width: 100%;">進入管理後台</button>
   </div>
 
-  <!-- 列表區塊 -->
+  <!-- 店家列表 -->
   <div id="list-section" class="hidden">
     <div class="header">
-      店家清單
+      店家清單 
       <button onclick="showForm()">＋新增店家</button>
     </div>
-    <div id="tenant-list"></div>
+    <table>
+      <thead>
+        <tr>
+          <th>商家名稱</th>
+          <th>LIFF ID</th>
+          <th>狀態</th>
+          <th style="width: 160px;">操作</th>
+        </tr>
+      </thead>
+      <tbody id="tenant-table-body"></tbody>
+    </table>
   </div>
 
-  <!-- 表單區塊 (新增/編輯) -->
+  <!-- 表單區 -->
   <div id="form-section" class="hidden">
-    <div class="header" id="form-title">新增店家</div>
-    <input type="text" id="tenant-id" placeholder="商家代號 (英文/數字，例如: shop01)">
-    <input type="text" id="liff-id" placeholder="LIFF ID (若留白將使用主系統)">
+    <div class="header" id="form-title">註冊店家</div>
+    <label style="font-size: 13px; color: #666;">商家代號 (不可重複且不可修改)</label>
+    <input type="text" id="tenant-id" placeholder="例如: sogo01">
+    <label style="font-size: 13px; color: #666;">商家名稱 (顯示用)</label>
+    <input type="text" id="tenant-name" placeholder="例如: 太平洋百貨">
+    <label style="font-size: 13px; color: #666;">LIFF ID</label>
+    <input type="text" id="liff-id">
+    <label style="font-size: 13px; color: #666;">開通狀態</label>
     <select id="tenant-status">
-      <option value="active">已開通 (付費)</option>
-      <option value="suspended">已停用 (欠費/測試結束)</option>
+      <option value="active">已開通</option>
+      <option value="suspended">已停用</option>
     </select>
-    <button onclick="saveTenant()">儲存設定</button>
-    <button class="text-btn" onclick="showList()" style="color: #999;">取消</button>
+    <button onclick="saveTenant()" style="width: 100%;">儲存設定</button>
+    <button class="text-btn" onclick="showList()">返回列表</button>
   </div>
+</div>
 
-  <!-- 自訂訊息框 -->
-  <div id="message-overlay">
-    <div class="message-box">
-      <div class="message-text" id="message-content"></div>
-      <button class="message-btn" onclick="closeMessage()">確認</button>
+<div id="message-overlay">
+  <div class="message-box">
+    <div id="message-content" class="message-text"></div>
+    <div id="confirm-btns" class="confirm-btns hidden">
+      <button id="btn-confirm-yes">確定</button>
+      <button id="btn-confirm-no" style="background:#ccc;">取消</button>
     </div>
+    <button id="btn-message-ok" class="message-btn" onclick="closeMessage()">我知道了</button>
   </div>
+</div>
 
-  <script>
-    const CF_WORKER_URL = 'https://ecbusiness.fangwl591021.workers.dev';
-    const MAIN_SYSTEM_LIFF_ID = '2009930620-98JTuN5O';
-    let adminKey = '';
+<script>
+  const CF_WORKER_URL = 'https://ecbusiness.fangwl591021.workers.dev';
+  const MAIN_LIFF_ID = '2009930620-98JTuN5O';
+  let adminKey = '';
 
-    function showMessage(text) {
-      document.getElementById('message-content').innerText = text;
-      document.getElementById('message-overlay').style.display = 'flex';
+  function showMessage(text, isConfirm = false, onConfirm = null) {
+    document.getElementById('message-content').innerText = text;
+    document.getElementById('message-overlay').style.display = 'flex';
+    if (isConfirm) {
+      document.getElementById('confirm-btns').classList.remove('hidden');
+      document.getElementById('btn-message-ok').classList.add('hidden');
+      document.getElementById('btn-confirm-yes').onclick = () => { onConfirm(); closeMessage(); };
+      document.getElementById('btn-confirm-no').onclick = closeMessage;
+    } else {
+      document.getElementById('confirm-btns').classList.add('hidden');
+      document.getElementById('btn-message-ok').classList.remove('hidden');
     }
-    function closeMessage() { document.getElementById('message-overlay').style.display = 'none'; }
+  }
+  function closeMessage() { document.getElementById('message-overlay').style.display = 'none'; }
 
-    async function login() {
-      const key = document.getElementById('admin-key').value;
-      if (!key) { showMessage("請輸入密碼"); return; }
-      adminKey = key;
-      await fetchTenants();
-    }
+  async function login() {
+    adminKey = document.getElementById('admin-key').value;
+    if (!adminKey) return showMessage("請輸入密碼");
+    await fetchTenants();
+  }
 
-    async function fetchTenants() {
-      try {
-        // 變更點：直接將密碼作為 URL 參數送出，避開 Header CORS 檢查
-        const res = await fetch(`${CF_WORKER_URL}?action=admin_list&adminKey=${encodeURIComponent(adminKey)}`);
-        
-        if (res.status === 401) {
-          showMessage("密碼錯誤，請重新輸入。");
-          return;
-        }
-
-        const data = await res.json();
-        renderList(data);
-        
-        document.getElementById('login-section').classList.add('hidden');
-        document.getElementById('form-section').classList.add('hidden');
-        document.getElementById('list-section').classList.remove('hidden');
-      } catch (err) {
-        showMessage("連線失敗，請確認 Worker 網址是否正確。");
-      }
-    }
-
-    function renderList(tenants) {
-      const container = document.getElementById('tenant-list');
-      container.innerHTML = '';
-      
-      if (tenants.length === 0) {
-        container.innerHTML = '<div class="list-sub" style="text-align:center; padding: 20px;">尚無店家資料</div>';
-        return;
-      }
-
-      tenants.forEach(t => {
-        const statusText = t.status === 'active' ? '<span class="status-active">已開通</span>' : '<span class="status-suspended">已停用</span>';
-        const item = document.createElement('div');
-        item.className = 'list-item';
-        item.innerHTML = `
-          <div class="list-info">
-            <div class="list-title">${t.tenantId}</div>
-            <div class="list-sub">LIFF: ${t.liffId || '未設定'} | 狀態: ${statusText}</div>
-          </div>
-          <button class="edit-btn" onclick="editTenant('${t.tenantId}', '${t.liffId}', '${t.status}')">編輯</button>
-        `;
-        container.appendChild(item);
-      });
-    }
-
-    function showForm() {
-      document.getElementById('form-title').innerText = "新增店家";
-      document.getElementById('tenant-id').value = "";
-      document.getElementById('tenant-id').readOnly = false;
-      document.getElementById('liff-id').value = MAIN_SYSTEM_LIFF_ID;
-      document.getElementById('tenant-status').value = "active";
-      
-      document.getElementById('list-section').classList.add('hidden');
-      document.getElementById('form-section').classList.remove('hidden');
-    }
-
-    function editTenant(id, liff, status) {
-      document.getElementById('form-title').innerText = "編輯店家";
-      document.getElementById('tenant-id').value = id;
-      document.getElementById('tenant-id').readOnly = true;
-      document.getElementById('liff-id').value = liff === 'undefined' ? '' : liff;
-      document.getElementById('tenant-status').value = status;
-      
-      document.getElementById('list-section').classList.add('hidden');
-      document.getElementById('form-section').classList.remove('hidden');
-    }
-
-    function showList() {
+  async function fetchTenants() {
+    try {
+      const res = await fetch(`${CF_WORKER_URL}?action=admin_list&adminKey=${encodeURIComponent(adminKey)}`);
+      if (res.status === 401) return showMessage("密碼錯誤");
+      const data = await res.json();
+      renderTable(data);
+      document.getElementById('login-section').classList.add('hidden');
       document.getElementById('form-section').classList.add('hidden');
       document.getElementById('list-section').classList.remove('hidden');
-    }
+    } catch (e) { showMessage("連線失敗"); }
+  }
 
-    async function saveTenant() {
-      const tenantId = document.getElementById('tenant-id').value.trim();
-      let liffId = document.getElementById('liff-id').value.trim();
-      const status = document.getElementById('tenant-status').value;
+  function renderTable(tenants) {
+    const tbody = document.getElementById('tenant-table-body');
+    tbody.innerHTML = tenants.length === 0 ? '<tr><td colspan="4" style="text-align:center; color:#999;">暫無店家資料</td></tr>' : '';
+    tenants.forEach(t => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${t.tenantName || '未命名'}</strong><br><small style="color:#999">${t.tenantId}</small></td>
+        <td><code style="background:#f5f5f5; padding:2px 4px;">${t.liffId}</code></td>
+        <td><span class="status-tag status-${t.status}">${t.status === 'active' ? '已開通' : '已停用'}</span></td>
+        <td>
+          <button class="btn-edit" onclick="editTenant('${t.tenantId}', '${t.tenantName || ''}', '${t.liffId}', '${t.status}')">編輯</button>
+          <button class="btn-delete" onclick="deleteTenant('${t.tenantId}')">刪除</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
 
-      if (!tenantId) { showMessage("商家代號不能為空"); return; }
-      if (!liffId) { liffId = MAIN_SYSTEM_LIFF_ID; }
+  function showForm() {
+    document.getElementById('form-title').innerText = "新增店家";
+    document.getElementById('tenant-id').value = "";
+    document.getElementById('tenant-id').readOnly = false;
+    document.getElementById('tenant-name').value = "";
+    document.getElementById('liff-id').value = MAIN_LIFF_ID;
+    document.getElementById('tenant-status').value = "active";
+    document.getElementById('list-section').classList.add('hidden');
+    document.getElementById('form-section').classList.remove('hidden');
+  }
 
+  function editTenant(id, name, liff, status) {
+    document.getElementById('form-title').innerText = "編輯店家設定";
+    document.getElementById('tenant-id').value = id;
+    document.getElementById('tenant-id').readOnly = true;
+    document.getElementById('tenant-name').value = name;
+    document.getElementById('liff-id').value = liff;
+    document.getElementById('tenant-status').value = status;
+    document.getElementById('list-section').classList.add('hidden');
+    document.getElementById('form-section').classList.remove('hidden');
+  }
+
+  function showList() { document.getElementById('form-section').classList.add('hidden'); document.getElementById('list-section').classList.remove('hidden'); }
+
+  async function saveTenant() {
+    const tenantId = document.getElementById('tenant-id').value.trim();
+    const tenantName = document.getElementById('tenant-name').value.trim();
+    const liffId = document.getElementById('liff-id').value.trim() || MAIN_LIFF_ID;
+    const status = document.getElementById('tenant-status').value;
+    if (!tenantId) return showMessage("代號不能為空");
+    try {
+      const res = await fetch(`${CF_WORKER_URL}?action=admin_save&adminKey=${encodeURIComponent(adminKey)}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenantId, tenantName, liffId, status })
+      });
+      await fetchTenants();
+    } catch (e) { showMessage("儲存失敗"); }
+  }
+
+  async function deleteTenant(id) {
+    showMessage(`確定要刪除商家 [${id}] 嗎？此動作將移除該商家所有名片資料！`, true, async () => {
       try {
-        const payload = { tenantId, liffId, status };
-        
-        // 變更點：直接將密碼作為 URL 參數送出，避開 Header CORS 檢查
-        const res = await fetch(`${CF_WORKER_URL}?action=admin_save&adminKey=${encodeURIComponent(adminKey)}`, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payload)
+        await fetch(`${CF_WORKER_URL}?action=admin_delete&adminKey=${encodeURIComponent(adminKey)}`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tenantId: id })
         });
-
-        if (res.status === 401) {
-          showMessage("驗證過期，請重新登入");
-          document.getElementById('form-section').classList.add('hidden');
-          document.getElementById('login-section').classList.remove('hidden');
-          return;
-        }
-
-        const result = await res.json();
-        if (result.status === 'success') {
-          await fetchTenants();
-        } else {
-          showMessage("儲存失敗");
-        }
-      } catch (err) {
-        showMessage("連線發生錯誤");
-      }
-    }
-  </script>
+        await fetchTenants();
+      } catch (e) { showMessage("刪除失敗"); }
+    });
+  }
+</script>
 </body>
 </html>
