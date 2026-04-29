@@ -3,256 +3,165 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>電子名片</title>
+  <title>電子名片系統</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
     body { font-family: sans-serif; padding: 16px; color: #111111; margin: 0; background-color: #ffffff; }
-    .view-mode, .edit-mode { display: none; }
+    .section { display: none; }
     .active { display: block; }
-    .header { display: flex; align-items: center; margin-bottom: 16px; }
-    .avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; margin-right: 12px; background-color: #eeeeee; }
-    .name { font-size: 16px; margin-bottom: 2px; }
-    .sub-text { font-size: 13px; color: #999999; }
-    .info { font-size: 14px; margin-bottom: 8px; color: #333333; }
     
-    input, select { display: block; width: 100%; margin-bottom: 16px; padding: 8px 0; border: none; border-bottom: 1px solid #eeeeee; font-size: 14px; box-sizing: border-box; color: #111111; background: transparent; }
-    input:focus, select:focus { outline: none; border-bottom: 1px solid #00B900; }
+    /* LINE OA 原生資訊流樣式 */
+    .label { font-size: 13px; color: #999999; margin-bottom: 4px; display: block; }
+    input { display: block; width: 100%; margin-bottom: 20px; padding: 10px 0; border: none; border-bottom: 1px solid #eeeeee; font-size: 15px; box-sizing: border-box; color: #111111; background: transparent; border-radius: 0; }
+    input:focus { outline: none; border-bottom: 1px solid #00B900; }
     
-    button { background-color: #00B900; color: #ffffff; border: none; padding: 10px; width: 100%; font-size: 14px; border-radius: 4px; margin-top: 10px; cursor: pointer; }
-    .text-btn { background-color: transparent; color: #00B900; border: none; padding: 10px 0; font-size: 14px; width: auto; margin-top: 8px; }
-    .action-group { display: flex; gap: 10px; margin-top: 24px; border-top: 1px solid #eeeeee; padding-top: 16px; }
-    .action-group button { margin-top: 0; flex: 1; }
+    button { background-color: #00B900; color: #ffffff; border: none; padding: 12px; width: 100%; font-size: 15px; border-radius: 4px; cursor: pointer; transition: 0.2s; }
+    .btn-secondary { background-color: #f5f5f5; color: #111111; margin-top: 10px; }
     
-    #loading { font-size: 14px; color: #999999; text-align: center; margin-top: 20px; }
-
-    #message-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; }
-    .message-box { background: #fff; padding: 20px; border-radius: 8px; width: 80%; max-width: 300px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-    .message-text { font-size: 14px; color: #111; margin-bottom: 16px; line-height: 1.5; }
-    .message-btn { background-color: #111; margin-top: 0; }
+    .header { display: flex; align-items: center; margin-bottom: 20px; }
+    .avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; margin-right: 12px; background-color: #f8f8f8; }
+    .name { font-size: 17px; margin-bottom: 2px; }
+    .sub { font-size: 13px; color: #999999; }
+    .info-row { font-size: 14px; margin-bottom: 10px; color: #333333; }
+    
+    #loading { text-align: center; padding-top: 40px; color: #999999; font-size: 14px; }
   </style>
 </head>
 <body>
-  <div id="loading">系統載入中...</div>
+  <div id="loading">身分辨認中...</div>
 
-  <div id="view-section" class="view-mode">
+  <!-- 1. 商家註冊區 (status: pending) -->
+  <div id="section-onboarding" class="section">
+    <span class="label">商家名稱</span>
+    <input type="text" id="reg-name" placeholder="請填寫您的公司或店家名稱">
+    <p style="font-size: 13px; color: #999; margin-bottom: 20px;">點擊下方按鈕將抓取您的 LINE 身分進行授權綁定。</p>
+    <button onclick="bindIdentity()">抓取並綁定我的 LINE</button>
+  </div>
+
+  <!-- 2. 等待開通區 (status: binding) -->
+  <div id="section-status" class="section" style="text-align:center; padding-top:60px;">
+    <p style="color:#999; font-size:14px;">身分抓取成功！<br>請聯繫管理員回填核准，開通您的服務。</p>
+    <button class="btn-secondary" onclick="location.reload()">重新整理狀態</button>
+  </div>
+
+  <!-- 3. 名片功能區 (status: active) -->
+  <div id="section-view" class="section">
     <div class="header">
-      <img id="view-avatar" class="avatar" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="">
-      <div>
+      <img id="view-avatar" class="avatar" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=">
+      <div class="name-title">
         <div id="view-name" class="name"></div>
-        <div id="view-title" class="sub-text"></div>
+        <div id="view-sub" class="sub"></div>
       </div>
     </div>
-    <div class="info" id="view-phone"></div>
-    <div class="info" id="view-email"></div>
-    
-    <div class="action-group">
-      <button onclick="sendToCurrentChat()">發送至此聊天</button>
-      <button onclick="shareToFriends()" style="background-color: #f5f5f5; color: #111;">分享給好友</button>
+    <div class="info-row" id="view-phone"></div>
+    <div class="info-row" id="view-email"></div>
+    <div style="display: flex; gap: 10px; margin-top: 30px;">
+      <button onclick="sendMsg()">傳送名片</button>
+      <button class="btn-secondary" onclick="shareMsg()">分享好友</button>
     </div>
-    <button class="text-btn" onclick="toggleMode('edit')">更新資料與設定天數</button>
+    <button style="background:none; color:#00B900; margin-top:10px;" onclick="showSection('edit')">更新我的資料</button>
   </div>
 
-  <div id="edit-section" class="edit-mode">
-    <input type="text" id="name" placeholder="姓名">
-    <input type="text" id="title" placeholder="職稱與公司">
-    <input type="tel" id="phone" placeholder="行動電話">
-    <input type="email" id="email" placeholder="電子郵件">
-    <input type="url" id="avatar" placeholder="大頭貼圖片網址 (選填)">
-    <input type="number" id="duration" placeholder="使用天數 (預設30天)" value="30">
-    <button onclick="saveData()">儲存並發佈</button>
-    <button class="text-btn" onclick="toggleMode('view')" style="color:#999; width: 100%;">取消</button>
-  </div>
-
-  <div id="message-overlay">
-    <div class="message-box">
-      <div class="message-text" id="message-content"></div>
-      <button class="message-btn" onclick="closeMessage()">確認</button>
-    </div>
+  <!-- 4. 名片編輯區 -->
+  <div id="section-edit" class="section">
+    <span class="label">姓名</span>
+    <input type="text" id="edit-name">
+    <span class="label">職稱公司</span>
+    <input type="text" id="edit-title">
+    <span class="label">電話</span>
+    <input type="tel" id="edit-phone">
+    <span class="label">信箱</span>
+    <input type="email" id="edit-email">
+    <span class="label">頭像網址</span>
+    <input type="url" id="edit-avatar">
+    <button onclick="saveCard()">儲存資料</button>
   </div>
 
   <script>
-    const CF_WORKER_URL = 'https://your-worker.your-subdomain.workers.dev';
-    
-    let currentUserId = '';
-    let tenantId = 'default';
-    let dynamicLiffId = '';
-    let cardData = null;
+    const API = 'https://ecbusiness.fangwl591021.workers.dev';
+    let userId = '', tenantId = '', liffId = '', cardData = null;
 
-    function showMessage(text) {
-      document.getElementById('message-content').innerText = text;
-      document.getElementById('message-overlay').style.display = 'flex';
-    }
-    function closeMessage() { document.getElementById('message-overlay').style.display = 'none'; }
-
-    function resolveDynamicParams() {
-      const urlParams = new URLSearchParams(window.location.search);
-      let tId = urlParams.get('tenantId');
-      let lId = urlParams.get('liffId');
-      
-      if (!tId || !lId) {
-        const state = urlParams.get('liff.state');
-        if (state) { 
-          const stateParams = new URLSearchParams('?' + state);
-          tId = tId || stateParams.get('tenantId');
-          lId = lId || stateParams.get('liffId');
-        }
-      }
-      tenantId = tId || 'default';
-      dynamicLiffId = lId;
-    }
-
-    async function initLiff() {
-      try {
-        resolveDynamicParams();
-        
-        if (!dynamicLiffId) {
-          document.getElementById('loading').innerText = '系統參數錯誤，遺失 LIFF ID 綁定。';
-          return;
-        }
-
-        await liff.init({ liffId: dynamicLiffId });
-        
-        if (liff.isLoggedIn()) {
-          const profile = await liff.getProfile();
-          currentUserId = profile.userId;
-          loadData();
-        } else {
-          let currentUrl = window.location.href.split('?')[0];
-          let loginUrl = { redirectUri: `${currentUrl}?liffId=${dynamicLiffId}&tenantId=${tenantId}` };
-          liff.login(loginUrl);
-        }
-      } catch (err) {
-        document.getElementById('loading').innerText = 'LIFF 初始化失敗，請檢查設定。';
-      }
-    }
-
-    async function loadData() {
-      document.getElementById('loading').style.display = 'block';
-      document.getElementById('view-section').classList.remove('active');
-      document.getElementById('edit-section').classList.remove('active');
-
-      try {
-        const res = await fetch(`${CF_WORKER_URL}?action=get&tenantId=${tenantId}&userId=${currentUserId}`);
-        cardData = await res.json();
-
-        if (cardData.quotaFull && !cardData.name) {
-          document.getElementById('loading').innerText = '該商家名片額度已滿，目前無空位可註冊。';
-          return;
-        }
-
-        if (!cardData.name || cardData.name === "") {
-          toggleMode('edit');
-        } else {
-          document.getElementById('view-name').innerText = cardData.name;
-          document.getElementById('view-title').innerText = cardData.title;
-          document.getElementById('view-phone').innerText = cardData.phone;
-          document.getElementById('view-email').innerText = cardData.email;
-          if (cardData.avatar) document.getElementById('view-avatar').src = cardData.avatar;
-
-          document.getElementById('name').value = cardData.name;
-          document.getElementById('title').value = cardData.title;
-          document.getElementById('phone').value = cardData.phone;
-          document.getElementById('email').value = cardData.email;
-          document.getElementById('avatar').value = cardData.avatar;
-          document.getElementById('duration').value = cardData.duration || 30;
-
-          toggleMode('view');
-        }
-      } catch (err) {
-        document.getElementById('loading').innerText = '載入資料失敗，請重新整理。';
-      }
+    function showSection(id) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
       document.getElementById('loading').style.display = 'none';
+      document.getElementById('section-' + id).classList.add('active');
     }
 
-    async function saveData() {
-      const name = document.getElementById('name').value;
-      const title = document.getElementById('title').value;
-      const phone = document.getElementById('phone').value;
-      const email = document.getElementById('email').value;
-      const avatar = document.getElementById('avatar').value;
-      const duration = document.getElementById('duration').value;
+    async function init() {
+      const p = new URLSearchParams(window.location.search);
+      tenantId = p.get('tenantId'); liffId = p.get('liffId');
+      if (!tenantId || !liffId) { document.getElementById('loading').innerText = '網址參數錯誤'; return; }
 
-      if(!name) { showMessage("請填寫姓名"); return; }
+      await liff.init({ liffId: liffId });
+      if (!liff.isLoggedIn()) {
+        liff.login({ redirectUri: window.location.href });
+        return;
+      }
+      const profile = await liff.getProfile();
+      userId = profile.userId;
+      checkStatus();
+    }
 
-      document.getElementById('edit-section').classList.remove('active');
-      document.getElementById('loading').style.display = 'block';
-      document.getElementById('loading').innerText = '儲存中...';
+    async function checkStatus() {
+      const res = await fetch(`${API}/?action=check_status&tenantId=${tenantId}`);
+      const t = await res.json();
+      if (t.status === 'pending') showSection('onboarding');
+      else if (t.status === 'binding') showSection('status');
+      else if (t.status === 'active') loadCard();
+      else document.getElementById('loading').innerText = '帳號異常或已停用';
+    }
 
-      try {
-        // 將 dynamicLiffId 放入 payload，讓 Worker 拋給 GAS 做店家登記
-        const payload = { name, title, phone, email, avatar, duration, liffId: dynamicLiffId };
-        const res = await fetch(`${CF_WORKER_URL}?action=save&tenantId=${tenantId}&userId=${currentUserId}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const result = await res.json();
+    async function bindIdentity() {
+      const name = document.getElementById('reg-name').value;
+      if (!name) return alert('請填寫商家名稱');
+      await fetch(`${API}/?action=tenant_bind&tenantId=${tenantId}`, {
+        method: 'POST', body: JSON.stringify({ tenantName: name, userId: userId })
+      });
+      location.reload();
+    }
 
-        if (result.status === 'error') {
-          showMessage(result.message);
-          document.getElementById('loading').style.display = 'none';
-          document.getElementById('edit-section').classList.add('active');
-        } else {
-          await loadData();
-        }
-      } catch (err) {
-        showMessage('儲存發生錯誤，請稍後再試。');
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('edit-section').classList.add('active');
+    async function loadCard() {
+      const res = await fetch(`${API}/?action=get&tenantId=${tenantId}&userId=${userId}`);
+      cardData = await res.json();
+      if (!cardData.name) showSection('edit');
+      else {
+        document.getElementById('view-name').innerText = cardData.name;
+        document.getElementById('view-sub').innerText = cardData.title;
+        document.getElementById('view-phone').innerText = 'Mobile: ' + cardData.phone;
+        document.getElementById('view-email').innerText = 'Email: ' + cardData.email;
+        if (cardData.avatar) document.getElementById('view-avatar').src = cardData.avatar;
+        
+        document.getElementById('edit-name').value = cardData.name;
+        document.getElementById('edit-title').value = cardData.title;
+        document.getElementById('edit-phone').value = cardData.phone;
+        document.getElementById('edit-email').value = cardData.email;
+        document.getElementById('edit-avatar').value = cardData.avatar;
+        showSection('view');
       }
     }
 
-    function toggleMode(mode) {
-      if (mode === 'view') {
-        document.getElementById('view-section').classList.add('active');
-        document.getElementById('edit-section').classList.remove('active');
-      } else {
-        document.getElementById('view-section').classList.remove('active');
-        document.getElementById('edit-section').classList.add('active');
-      }
+    async function saveCard() {
+      const name = document.getElementById('edit-name').value;
+      if (!name) return alert('請填寫姓名');
+      await fetch(`${API}/?action=save&tenantId=${tenantId}&userId=${userId}`, {
+        method: 'POST', body: JSON.stringify({
+          name, title: document.getElementById('edit-title').value,
+          phone: document.getElementById('edit-phone').value,
+          email: document.getElementById('edit-email').value,
+          avatar: document.getElementById('edit-avatar').value,
+          duration: 30
+        })
+      });
+      loadCard();
     }
 
-    function buildFlexMessage() {
-      return {
-        type: "flex", altText: `${cardData.name} 的電子名片`,
-        contents: {
-          type: "bubble", size: "kilo",
-          body: {
-            type: "box", layout: "vertical", paddingAll: "md",
-            contents: [
-              {
-                type: "box", layout: "horizontal",
-                contents: [
-                  { type: "image", url: cardData.avatar || "https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png", size: "sm", aspectMode: "cover", aspectRatio: "1:1", flex: 1 },
-                  { type: "box", layout: "vertical", contents: [
-                      { type: "text", text: cardData.name, size: "md", color: "#111111" },
-                      { type: "text", text: cardData.title, size: "sm", color: "#999999", margin: "xs" }
-                    ], flex: 3, margin: "md", justifyContent: "center"
-                  }
-                ]
-              },
-              { type: "text", text: `Mobile: ${cardData.phone}`, size: "sm", color: "#333333", margin: "md" },
-              { type: "text", text: `Email: ${cardData.email}`, size: "sm", color: "#333333", margin: "xs" }
-            ]
-          }
-        }
-      };
+    function buildFlex() {
+      return { type: "flex", altText: `${cardData.name} 的名片`, contents: { type: "bubble", size: "kilo", body: { type: "box", layout: "vertical", contents: [ { type: "box", layout: "horizontal", contents: [ { type: "image", url: cardData.avatar || "https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png", size: "sm", aspectMode: "cover", aspectRatio: "1:1", flex: 1 }, { type: "box", layout: "vertical", contents: [ { type: "text", text: cardData.name, size: "md", color: "#111111" }, { type: "text", text: cardData.title, size: "sm", color: "#999999", margin: "xs" } ], flex: 3, margin: "md", justifyContent: "center" } ] }, { type: "text", text: `Mobile: ${cardData.phone}`, size: "sm", color: "#333333", margin: "md" }, { type: "text", text: `Email: ${cardData.email}`, size: "sm", color: "#333333", margin: "xs" } ], paddingAll: "md" } } };
     }
+    async function sendMsg() { await liff.sendMessages([buildFlex()]); liff.closeWindow(); }
+    async function shareMsg() { await liff.shareTargetPicker([buildFlex()]); liff.closeWindow(); }
 
-    async function sendToCurrentChat() {
-      if (!liff.isInClient()) { showMessage("此功能僅能在 LINE 內部使用。"); return; }
-      try { await liff.sendMessages([buildFlexMessage()]); liff.closeWindow(); } 
-      catch (error) { showMessage("發送失敗，請確認已同意授權。"); }
-    }
-
-    async function shareToFriends() {
-      if (liff.isApiAvailable('shareTargetPicker')) {
-        try { const res = await liff.shareTargetPicker([buildFlexMessage()]); if (res) liff.closeWindow(); } 
-        catch (error) { showMessage("分享發生錯誤或被取消。"); }
-      } else { showMessage("當前的 LINE 版本不支援分享功能。"); }
-    }
-
-    initLiff();
+    init();
   </script>
 </body>
 </html>
