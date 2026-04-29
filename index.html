@@ -12,13 +12,15 @@
     
     /* LINE OA 原生設計規範：無框線、極簡、灰字標籤 */
     .label { font-size: 13px; color: #999999; margin-bottom: 4px; display: block; }
-    input { display: block; width: 100%; margin-bottom: 24px; padding: 12px 0; border: none; border-bottom: 1px solid #eeeeee; font-size: 15px; color: #111111; background: transparent; border-radius: 0; }
+    input[type="text"], input[type="tel"], input[type="email"] { display: block; width: 100%; margin-bottom: 24px; padding: 12px 0; border: none; border-bottom: 1px solid #eeeeee; font-size: 15px; color: #111111; background: transparent; border-radius: 0; }
     input:focus { outline: none; border-bottom: 1px solid #00B900; }
     
     button { background-color: #00B900; color: #ffffff; border: none; padding: 14px; width: 100%; font-size: 15px; border-radius: 6px; cursor: pointer; transition: 0.2s; -webkit-tap-highlight-color: transparent; }
     button:active { opacity: 0.7; }
     .btn-secondary { background-color: #f5f5f5; color: #111111; margin-top: 12px; }
     
+    /* 名片預覽模組 */
+    .card-preview { padding: 24px 0; border-bottom: 1px solid #eeeeee; margin-bottom: 24px; }
     .header { display: flex; align-items: center; margin-bottom: 24px; }
     .avatar { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; margin-right: 16px; background-color: #f8f8f8; }
     .name-area { flex: 1; }
@@ -27,9 +29,13 @@
     .info-row { font-size: 15px; margin-bottom: 12px; color: #444; display: flex; align-items: center; }
     .info-row span { color: #999; margin-right: 8px; font-size: 13px; width: 45px; }
     
+    /* 照片上傳模組 */
+    .upload-area { display: flex; align-items: center; margin-bottom: 24px; padding: 10px 0; border-bottom: 1px solid #eeeeee; }
+    .upload-preview { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background-color: #f8f8f8; margin-right: 12px; }
+    input[type="file"] { flex: 1; font-size: 14px; color: #666; }
+    
     #loading { text-align: center; padding-top: 50px; color: #999; font-size: 14px; line-height: 1.6; }
     
-    /* 訊息彈窗樣式 */
     #message-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
     .message-box { background: #fff; padding: 24px; border-radius: 12px; width: 80%; max-width: 300px; text-align: center; }
     .message-text { font-size: 14px; color: #333; margin-bottom: 20px; line-height: 1.6; }
@@ -39,7 +45,7 @@
 <body>
   <div id="loading">身分辨認中...</div>
 
-  <!-- 手動補救模式 (解決測試環境跳轉遺失) -->
+  <!-- 手動補救模式 -->
   <div id="section-debug" class="section">
     <p style="font-size: 14px; color: #999; margin-bottom: 24px;">偵測到網址缺少必要參數，請手動輸入進行測試綁定：</p>
     <span class="label">商家代號 (tenantId)</span>
@@ -63,27 +69,36 @@
     <button class="btn-secondary" onclick="location.reload()">重新整理</button>
   </div>
 
-  <!-- 3. 名片檢視區 -->
+  <!-- 3. 名片檢視區 (導入名片模組) -->
   <div id="section-view" class="section">
-    <div class="header">
-      <img id="view-avatar" class="avatar" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=">
-      <div class="name-area">
-        <div id="view-name" class="name"></div>
-        <div id="view-sub" class="sub"></div>
+    <div class="card-preview">
+      <div class="header">
+        <img id="view-avatar" class="avatar" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=">
+        <div class="name-area">
+          <div id="view-name" class="name"></div>
+          <div id="view-sub" class="sub"></div>
+        </div>
       </div>
+      <div class="info-row"><span>電話</span> <div id="view-phone"></div></div>
+      <div class="info-row"><span>信箱</span> <div id="view-email"></div></div>
     </div>
-    <div class="info-row"><span>電話</span> <div id="view-phone"></div></div>
-    <div class="info-row"><span>信箱</span> <div id="view-email"></div></div>
     
-    <div style="margin-top: 40px;">
+    <div>
       <button onclick="sendMsg()">傳送名片至此聊天</button>
       <button class="btn-secondary" onclick="shareMsg()">分享名片給好友</button>
     </div>
     <button style="background:none; color:#00B900; margin-top:16px; font-size:14px; padding: 10px 0; border:none; width: 100%;" onclick="showSection('edit')">編輯名片資料</button>
   </div>
 
-  <!-- 4. 名片編輯區 -->
+  <!-- 4. 名片編輯區 (導入相簿上傳) -->
   <div id="section-edit" class="section">
+    <span class="label">大頭貼照片</span>
+    <div class="upload-area">
+      <img id="edit-avatar-preview" class="upload-preview" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=">
+      <input type="file" id="edit-avatar-file" accept="image/*" onchange="handleImageUpload(event)">
+      <input type="hidden" id="edit-avatar-url">
+    </div>
+
     <span class="label">姓名</span>
     <input type="text" id="edit-name" placeholder="您的姓名">
     <span class="label">職稱與公司</span>
@@ -92,8 +107,6 @@
     <input type="tel" id="edit-phone" placeholder="09xx-xxx-xxx">
     <span class="label">電子郵件</span>
     <input type="email" id="edit-email" placeholder="example@mail.com">
-    <span class="label">大頭貼網址 (可選)</span>
-    <input type="url" id="edit-avatar" placeholder="https://...">
     
     <button onclick="saveCard()">儲存資料</button>
     <button class="btn-secondary" onclick="showSection('view')">返回</button>
@@ -108,8 +121,7 @@
 
   <script>
     const API = 'https://ecbusiness.fangwl591021.workers.dev';
-    let userId = '', tenantId = '', liffId = '';
-    let cardData = {};
+    let userId = '', tenantId = '', liffId = '', cardData = {};
 
     function showMessage(text) {
       document.getElementById('message-content').innerText = text;
@@ -129,7 +141,6 @@
       let tId = urlObj.searchParams.get('tenantId');
       let lId = urlObj.searchParams.get('liffId');
       
-      // 解析 liff.state 內的隱藏參數
       if (!tId || !lId) {
         let state = urlObj.searchParams.get('liff.state');
         if (!state && window.location.hash.includes('liff.state')) {
@@ -151,9 +162,11 @@
     }
 
     async function init() {
+      if (window.location.href.startsWith('blob:') || window.location.hostname.includes('usercontent')) {
+        document.getElementById('loading').innerHTML = '<span style="color:#ff4d4f;">⚠️ 系統提示：無法於此預覽環境執行。</span><br><br>請部署至 GitHub Pages 使用真實網址測試。';
+        return;
+      }
       resolveParams();
-
-      // 如果仍然抓不到參數，直接顯示手動輸入畫面
       if (!tenantId || !liffId) {
         showSection('debug');
         return;
@@ -162,7 +175,6 @@
       try {
         await liff.init({ liffId: liffId });
         if (!liff.isLoggedIn()) {
-          // 強制將當前完整的帶參網址作為 redirectUri
           const fullUrl = new URL(window.location.href.split('?')[0].split('#')[0]);
           fullUrl.searchParams.set('liffId', liffId);
           fullUrl.searchParams.set('tenantId', tenantId);
@@ -173,19 +185,14 @@
         userId = profile.userId;
         checkStatus();
       } catch (err) {
-        document.getElementById('loading').innerText = 'LINE 認證初始化失敗，請確認 LIFF ID 是否正確。';
+        document.getElementById('loading').innerText = 'LINE 認證初始化失敗。';
       }
     }
 
-    // 真正的解法：將輸入的參數直接拼裝成實體網址並導航過去，徹底避免 LIFF 登入後遺失
     function manualStart() {
       const inputTenant = document.getElementById('manual-tenant').value.trim();
       const inputLiff = document.getElementById('manual-liff').value.trim();
-      
-      if (!inputTenant || !inputLiff) {
-        return alert('請完整填寫參數');
-      }
-      
+      if (!inputTenant || !inputLiff) return alert('請完整填寫參數');
       const newUrl = new URL(window.location.href.split('?')[0].split('#')[0]);
       newUrl.searchParams.set('liffId', inputLiff);
       newUrl.searchParams.set('tenantId', inputTenant);
@@ -196,6 +203,13 @@
       try {
         const res = await fetch(`${API}/?action=check_status&tenantId=${tenantId}`);
         const t = await res.json();
+        
+        if (t.status === 'error' || t.code === 'NOT_FOUND') {
+          document.getElementById('status-text').innerHTML = `<span style="color:#ff4d4f;">系統找不到商家代號 [${tenantId}]</span><br><br>請先至總管後台「預開帳號」。`;
+          showSection('status');
+          return;
+        }
+
         if (t.status === 'pending') showSection('onboarding');
         else if (t.status === 'binding') {
           document.getElementById('status-text').innerText = '身分抓取成功！\n請通知總管核准開通帳號。';
@@ -224,29 +238,91 @@
     async function loadCard() {
       const res = await fetch(`${API}/?action=get&tenantId=${tenantId}&userId=${userId}`);
       cardData = await res.json();
+      
       if (!cardData.name) {
         showSection('edit');
       } else {
-        document.getElementById('view-name').innerText = cardData.name;
-        document.getElementById('view-sub').innerText = cardData.title;
-        document.getElementById('view-phone').innerText = cardData.phone || '未填寫';
-        document.getElementById('view-email').innerText = cardData.email || '未填寫';
-        if (cardData.avatar) document.getElementById('view-avatar').src = cardData.avatar;
+        // 修復 undefined 顯示錯誤
+        const validAvatar = (cardData.avatar && cardData.avatar !== 'undefined') ? cardData.avatar : '';
         
-        document.getElementById('edit-name').value = cardData.name;
-        document.getElementById('edit-title').value = cardData.title;
-        document.getElementById('edit-phone').value = cardData.phone;
-        document.getElementById('edit-email').value = cardData.email;
-        document.getElementById('edit-avatar').value = cardData.avatar;
+        document.getElementById('view-name').innerText = cardData.name;
+        document.getElementById('view-sub').innerText = cardData.title || '';
+        document.getElementById('view-phone').innerText = cardData.phone || '-';
+        document.getElementById('view-email').innerText = cardData.email || '-';
+        
+        if (validAvatar) {
+          document.getElementById('view-avatar').src = validAvatar;
+          document.getElementById('edit-avatar-preview').src = validAvatar;
+        } else {
+          document.getElementById('view-avatar').src = "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
+          document.getElementById('edit-avatar-preview').src = "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
+        }
+        
+        document.getElementById('edit-name').value = cardData.name || '';
+        document.getElementById('edit-title').value = cardData.title || '';
+        document.getElementById('edit-phone').value = cardData.phone || '';
+        document.getElementById('edit-email').value = cardData.email || '';
+        document.getElementById('edit-avatar-url').value = validAvatar;
+        
         showSection('view');
       }
+    }
+
+    // 處理圖片上傳並壓縮，送至 R2
+    async function handleImageUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      document.getElementById('loading').innerText = '照片上傳中...';
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('section-edit').style.display = 'none';
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const img = new Image();
+        img.onload = async () => {
+          // Canvas 壓縮圖片至最大 400px (加速 R2 讀寫與節省流量)
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          const MAX_SIZE = 400;
+          let w = img.width, h = img.height;
+          
+          if (w > h && w > MAX_SIZE) { h *= MAX_SIZE / w; w = MAX_SIZE; } 
+          else if (h > MAX_SIZE) { w *= MAX_SIZE / h; h = MAX_SIZE; }
+          
+          canvas.width = w; canvas.height = h;
+          ctx.drawImage(img, 0, 0, w, h);
+          const base64 = canvas.toDataURL('image/jpeg', 0.8);
+
+          try {
+            const res = await fetch(`${API}/?action=upload_avatar&tenantId=${tenantId}&userId=${userId}`, {
+              method: 'POST',
+              body: JSON.stringify({ imageBase64: base64 })
+            });
+            const data = await res.json();
+            if (data.avatarUrl) {
+              document.getElementById('edit-avatar-preview').src = data.avatarUrl;
+              document.getElementById('edit-avatar-url').value = data.avatarUrl;
+            }
+          } catch (err) {
+            showMessage('圖片上傳失敗');
+          }
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('section-edit').style.display = 'block';
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
     }
 
     async function saveCard() {
       const name = document.getElementById('edit-name').value;
       if (!name) return alert('請填寫姓名');
       
+      document.getElementById('loading').innerText = '儲存中...';
       document.getElementById('loading').style.display = 'block';
+      document.getElementById('section-edit').style.display = 'none';
+
       await fetch(`${API}/?action=save&tenantId=${tenantId}&userId=${userId}`, {
         method: 'POST',
         body: JSON.stringify({
@@ -254,7 +330,7 @@
           title: document.getElementById('edit-title').value,
           phone: document.getElementById('edit-phone').value,
           email: document.getElementById('edit-email').value,
-          avatar: document.getElementById('edit-avatar').value,
+          avatar: document.getElementById('edit-avatar-url').value,
           duration: 30
         })
       });
@@ -262,7 +338,9 @@
     }
 
     function buildFlex() {
+      const validAvatar = (cardData.avatar && cardData.avatar !== 'undefined') ? cardData.avatar : "https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png";
       const currentUrl = window.location.origin + window.location.pathname + "?liffId=" + liffId + "&tenantId=" + tenantId;
+      
       return {
         type: "flex", altText: `${cardData.name} 的數位名片`,
         contents: {
@@ -273,7 +351,7 @@
                 type: "box", layout: "vertical", paddingAll: "20px", background: { type: "linearGradient", angle: "45deg", startColor: "#00B900", endColor: "#009900" }, contents: [
                   {
                     type: "box", layout: "horizontal", alignItems: "center", contents: [
-                      { type: "image", url: cardData.avatar || "https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png", size: "sm", aspectMode: "cover", aspectRatio: "1:1", flex: 0, cornerRadius: "100px" },
+                      { type: "image", url: validAvatar, size: "sm", aspectMode: "cover", aspectRatio: "1:1", flex: 0, cornerRadius: "100px" },
                       {
                         type: "box", layout: "vertical", margin: "lg", contents: [
                           { type: "text", text: cardData.name, size: "xl", color: "#ffffff", weight: "regular" },
@@ -300,7 +378,7 @@
                   },
                   { type: "separator", margin: "lg" },
                   {
-                    type: "button", action: { type: "uri", label: "查看詳情", uri: currentUrl }, height: "sm", style: "primary", color: "#00B900", margin: "lg"
+                    type: "button", action: { type: "uri", label: "保存名片", uri: currentUrl }, height: "sm", style: "primary", color: "#00B900", margin: "lg"
                   }
                 ]
               }
