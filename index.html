@@ -27,10 +27,7 @@
     .info-row { font-size: 15px; margin-bottom: 12px; color: #444; display: flex; align-items: center; }
     .info-row span { color: #999; margin-right: 8px; font-size: 13px; width: 45px; }
     
-    #loading { text-align: center; padding-top: 50px; color: #999; font-size: 14px; }
-    
-    /* 除錯輸入框樣式 */
-    #debug-input { padding: 20px; border: 1px dashed #ccc; margin-top: 20px; border-radius: 8px; background: #fafafa; }
+    #loading { text-align: center; padding-top: 50px; color: #999; font-size: 14px; line-height: 1.6; }
     
     /* 訊息彈窗樣式 */
     #message-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
@@ -42,16 +39,14 @@
 <body>
   <div id="loading">身分辨認中...</div>
 
-  <!-- 參數遺失補救區 (僅在 blob 或無參數網址出現) -->
+  <!-- 手動補救模式 (解決測試環境跳轉遺失) -->
   <div id="section-debug" class="section">
-    <div id="debug-input">
-      <p style="font-size:14px; color:#666;">偵測到預覽環境參數遺失，請手動輸入：</p>
-      <span class="label">商家代號 (tenantId)</span>
-      <input type="text" id="manual-tenant" placeholder="例如: L-LINK">
-      <span class="label">LIFF ID</span>
-      <input type="text" id="manual-liff" value="2009930620-98JTuN5O">
-      <button onclick="manualStart()">確認並開始測試</button>
-    </div>
+    <p style="font-size: 14px; color: #999; margin-bottom: 24px;">偵測到網址缺少必要參數，請手動輸入進行測試綁定：</p>
+    <span class="label">商家代號 (tenantId)</span>
+    <input type="text" id="manual-tenant" placeholder="例如: K-LINK">
+    <span class="label">LIFF ID</span>
+    <input type="text" id="manual-liff" value="2009930620-98JTuN5O">
+    <button onclick="manualStart()">寫入參數並重新載入</button>
   </div>
 
   <!-- 1. 商家註冊區 -->
@@ -113,7 +108,8 @@
 
   <script>
     const API = 'https://ecbusiness.fangwl591021.workers.dev';
-    let userId = '', tenantId = '', liffId = '', cardData = null;
+    let userId = '', tenantId = '', liffId = '';
+    let cardData = {};
 
     function showMessage(text) {
       document.getElementById('message-content').innerText = text;
@@ -133,15 +129,7 @@
       let tId = urlObj.searchParams.get('tenantId');
       let lId = urlObj.searchParams.get('liffId');
       
-      if (!tId || !lId) {
-        const hash = window.location.hash;
-        if (hash.includes('?')) {
-          const hashParams = new URLSearchParams(hash.split('?')[1]);
-          tId = tId || hashParams.get('tenantId');
-          lId = lId || hashParams.get('liffId');
-        }
-      }
-
+      // 解析 liff.state 內的隱藏參數
       if (!tId || !lId) {
         let state = urlObj.searchParams.get('liff.state');
         if (!state && window.location.hash.includes('liff.state')) {
@@ -162,49 +150,46 @@
       if (lId) liffId = lId;
     }
 
-    /**
-     * @param {boolean} skipResolve - 若為 true，則跳過解析網址 (用於手動模式)
-     */
-    async function init(skipResolve = false) {
-      if (!skipResolve) resolveParams();
+    async function init() {
+      resolveParams();
 
+      // 如果仍然抓不到參數，直接顯示手動輸入畫面
       if (!tenantId || !liffId) {
         showSection('debug');
-        console.warn("偵測到參數遺失，已開啟手動補救模式。");
         return;
       }
-
-      document.getElementById('section-debug').classList.remove('active');
-      document.getElementById('loading').style.display = 'block';
 
       try {
         await liff.init({ liffId: liffId });
         if (!liff.isLoggedIn()) {
-          liff.login({ redirectUri: window.location.href });
+          // 強制將當前完整的帶參網址作為 redirectUri
+          const fullUrl = new URL(window.location.href.split('?')[0].split('#')[0]);
+          fullUrl.searchParams.set('liffId', liffId);
+          fullUrl.searchParams.set('tenantId', tenantId);
+          liff.login({ redirectUri: fullUrl.toString() });
           return;
         }
         const profile = await liff.getProfile();
         userId = profile.userId;
         checkStatus();
       } catch (err) {
-        document.getElementById('loading').innerText = 'LINE 認證初始化失敗。';
+        document.getElementById('loading').innerText = 'LINE 認證初始化失敗，請確認 LIFF ID 是否正確。';
       }
     }
 
+    // 真正的解法：將輸入的參數直接拼裝成實體網址並導航過去，徹底避免 LIFF 登入後遺失
     function manualStart() {
       const inputTenant = document.getElementById('manual-tenant').value.trim();
       const inputLiff = document.getElementById('manual-liff').value.trim();
       
-      if(!inputTenant || !inputLiff) {
-        return alert("請完整填寫參數");
+      if (!inputTenant || !inputLiff) {
+        return alert('請完整填寫參數');
       }
       
-      // 設定全域變數
-      tenantId = inputTenant;
-      liffId = inputLiff;
-      
-      // 呼叫 init，並傳入 true 要求它不要去讀取有缺陷的網址
-      init(true);
+      const newUrl = new URL(window.location.href.split('?')[0].split('#')[0]);
+      newUrl.searchParams.set('liffId', inputLiff);
+      newUrl.searchParams.set('tenantId', inputTenant);
+      window.location.href = newUrl.toString();
     }
 
     async function checkStatus() {
